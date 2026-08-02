@@ -1,3 +1,4 @@
+import "@/lib/clerkSanitize";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { saveEvent, deleteEvent, getEventById } from "@/lib/kv";
