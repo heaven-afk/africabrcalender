@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
+import { isValidClerkPublishableKey } from "@/lib/clerkUtils";
 
 /* ─── Auth component ─────────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
@@ -492,11 +493,7 @@ function AdminAuthWrapper() {
   }
 
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-  const isValidClerkKey =
-    publishableKey.startsWith("pk_") &&
-    !publishableKey.includes("sample_key") &&
-    !publishableKey.includes("\n") &&
-    !publishableKey.includes("\r");
+  const isValidClerkKey = isValidClerkPublishableKey(publishableKey);
 
   if (!isValidClerkKey) {
     return <AdminDashboard />;
