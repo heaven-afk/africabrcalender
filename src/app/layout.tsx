@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkErrorBoundary } from "@/components/ClerkErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,9 +41,9 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-neutral-100 antialiased selection:bg-gold-500 selection:text-black">
         {isValidClerkKey ? (
-          <ClerkProvider publishableKey={publishableKey}>
+          <ClerkErrorBoundary publishableKey={publishableKey}>
             {children}
-          </ClerkProvider>
+          </ClerkErrorBoundary>
         ) : (
           children
         )}
