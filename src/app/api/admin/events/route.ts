@@ -64,10 +64,10 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, data: newEvent }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST /api/admin/events error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to create event" },
+      { success: false, error: error?.message || "Failed to create event" },
       { status: 500 }
     );
   }
@@ -107,10 +107,10 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: updatedEvent });
-  } catch (error) {
+  } catch (error: any) {
     console.error("PUT /api/admin/events error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update event" },
+      { success: false, error: error?.message || "Failed to update event" },
       { status: 500 }
     );
   }
@@ -136,10 +136,10 @@ export async function DELETE(request: NextRequest) {
 
     await deleteEvent(id);
     return NextResponse.json({ success: true, id });
-  } catch (error) {
+  } catch (error: any) {
     console.error("DELETE /api/admin/events error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to delete event" },
+      { success: false, error: error?.message || "Failed to delete event" },
       { status: 500 }
     );
   }

@@ -1,5 +1,4 @@
-// Server-only file persistence helper
-// This module is ONLY imported in server-side code (API routes, server components)
+// Server-only file & in-memory persistence helper
 import fs from "fs";
 import path from "path";
 import { CalendarEvent } from "@/types/event";
@@ -7,30 +6,47 @@ import { CalendarEvent } from "@/types/event";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "events.json");
 
+// In-memory fallback cache for serverless environments (Vercel) where filesystem is read-only
+let memoryCache: Map<string, CalendarEvent> | null = null;
+
 export function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch {
+    // Read-only filesystem on Vercel
   }
 }
 
 export function readJsonStore(): Map<string, CalendarEvent> {
-  ensureDataDir();
+  if (memoryCache) {
+    return memoryCache;
+  }
+
+  const map = new Map<string, CalendarEvent>();
   try {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, "utf-8");
       const arr: CalendarEvent[] = JSON.parse(raw);
-      const map = new Map<string, CalendarEvent>();
       arr.forEach((e) => map.set(e.id, e));
-      return map;
     }
-  } catch {
-    // corrupt file - start fresh
+  } catch (err) {
+    console.warn("Could not read file store, starting with empty map:", err);
   }
-  return new Map();
+
+  memoryCache = map;
+  return memoryCache;
 }
 
 export function writeJsonStore(map: Map<string, CalendarEvent>) {
-  ensureDataDir();
-  const arr = Array.from(map.values());
-  fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2), "utf-8");
+  memoryCache = map;
+  try {
+    ensureDataDir();
+    const arr = Array.from(map.values());
+    fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2), "utf-8");
+  } catch (err) {
+    // Expected on Vercel read-only serverless filesystem
+    console.warn("Filesystem is read-only (Vercel serverless). Saved event to in-memory store:", err);
+  }
 }
