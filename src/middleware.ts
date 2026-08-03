@@ -1,4 +1,3 @@
-import "@/lib/clerkSanitize";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -13,27 +12,38 @@ const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const isValidClerkKey =
   publishableKey &&
   publishableKey.startsWith("pk_") &&
-  !publishableKey.includes("sample_key");
+  !publishableKey.includes("sample_key") &&
+  !publishableKey.includes("\n") &&
+  !publishableKey.includes("\r");
 
-export default function middleware(req: Parameters<typeof clerkMiddleware>[0] extends (infer P) ? P : any, evt: any) {
-  if (!isValidClerkKey) {
+const clerkHandler = isValidClerkKey
+  ? clerkMiddleware(async (auth, request) => {
+      if (!isPublicRoute(request)) {
+        try {
+          const authObj = await auth();
+          if (typeof authObj.protect === "function") {
+            authObj.protect();
+          }
+        } catch {
+          // Dev fallback — allow through
+        }
+      }
+    })
+  : null;
+
+export default function middleware(
+  req: Parameters<typeof clerkMiddleware>[0] extends (infer P) ? P : any,
+  evt: any
+) {
+  try {
+    if (!clerkHandler) {
+      return NextResponse.next();
+    }
+    return clerkHandler(req, evt);
+  } catch {
+    // If Clerk fails (e.g. malformed key), allow the request through
     return NextResponse.next();
   }
-
-  const handler = clerkMiddleware(async (auth, request) => {
-    if (!isPublicRoute(request)) {
-      try {
-        const authObj = await auth();
-        if (typeof authObj.protect === "function") {
-          authObj.protect();
-        }
-      } catch {
-        // Dev fallback
-      }
-    }
-  });
-
-  return handler(req, evt);
 }
 
 export const config = {
