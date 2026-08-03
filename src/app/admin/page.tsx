@@ -2,45 +2,30 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
-  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Tv, ShieldAlert, Lock, LogOut, MessageSquare, KeyRound,
+  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Tv, ShieldAlert, Lock, LogOut, MessageSquare,
 } from "lucide-react";
 import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
-import { isValidClerkPublishableKey, sanitizeClerkKey } from "@/lib/clerkUtils";
 
-/* ─── Auth component ─────────────────────────────────────────────────────── */
+/* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
   try {
     const { user } = useUser();
     return (
-      <>
-        <SignedIn>
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs text-[#71717a] hidden sm:block">
-              {user?.primaryEmailAddress?.emailAddress || user?.fullName}
-            </span>
-            <UserButton afterSignOutUrl="/" />
-          </div>
-        </SignedIn>
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-black shadow-md hover:scale-[1.02] transition-transform"
-              style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}>
-              Sign In
-            </button>
-          </SignInButton>
-        </SignedOut>
-      </>
+      <SignedIn>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs text-[#71717a] hidden sm:block">
+            {user?.primaryEmailAddress?.emailAddress || user?.fullName}
+          </span>
+          <UserButton afterSignOutUrl="/" />
+        </div>
+      </SignedIn>
     );
   } catch {
-    return (
-      <span className="px-3 py-1.5 rounded-lg bg-[#e8a33d]/10 border border-[#e8a33d]/30 text-[#e8a33d] text-xs font-bold">
-        Dev Admin Session
-      </span>
-    );
+    return null;
   }
 }
 
@@ -88,7 +73,7 @@ function AdminContent() {
           Access Restricted
         </h2>
         <p className="text-sm text-[#71717a] max-w-md mb-6 leading-relaxed">
-          Your account (<span className="text-white font-semibold">{userEmail || "Signed In"}</span>) is not authorized to access the Admin Management Portal.
+          Your email address (<span className="text-white font-semibold">{userEmail || "Signed In"}</span>) is not listed as an authorized administrator on <code className="text-[#e8a33d] bg-black/40 px-1.5 py-0.5 rounded">NEXT_PUBLIC_ADMIN_EMAILS</code>.
         </p>
         <div className="flex items-center gap-3">
           <Link
@@ -478,59 +463,6 @@ function AdminDashboard() {
   );
 }
 
-/* ─── Passcode Security Gate for Dev/Fallback mode ──────────────────────── */
-function DevAdminPasscodeGate() {
-  const [passcode, setPasscode] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [error, setError] = useState(false);
-
-  if (unlocked) {
-    return <AdminDashboard />;
-  }
-
-  const handleVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple admin passcode check
-    if (passcode.trim() === "admin123" || passcode.trim().length > 3) {
-      setUnlocked(true);
-    } else {
-      setError(true);
-    }
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mb-4 shadow-xl">
-        <KeyRound className="w-8 h-8 text-[#e8a33d]" />
-      </div>
-      <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
-        Admin Security Gate
-      </h2>
-      <p className="text-sm text-[#71717a] max-w-sm mb-6 leading-relaxed">
-        Clerk single sign-on is not active. Please enter your administrator key to unlock event management.
-      </p>
-
-      <form onSubmit={handleVerify} className="w-full max-w-xs space-y-3">
-        <input
-          type="password"
-          value={passcode}
-          onChange={(e) => { setPasscode(e.target.value); setError(false); }}
-          placeholder="Enter Admin Key…"
-          className={fieldCls}
-        />
-        {error && <p className="text-xs text-red-400 font-semibold">Invalid Admin Key</p>}
-        <button
-          type="submit"
-          className="w-full py-2.5 rounded-xl text-sm font-extrabold text-black shadow-xl hover:scale-[1.02] transition-transform"
-          style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}
-        >
-          Unlock Admin Portal
-        </button>
-      </form>
-    </div>
-  );
-}
-
 function AdminAuthWrapper() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -544,33 +476,25 @@ function AdminAuthWrapper() {
     );
   }
 
-  const rawKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-  const publishableKey = sanitizeClerkKey(rawKey);
-  const isValidClerkKey = isValidClerkPublishableKey(publishableKey);
-
-  if (!isValidClerkKey) {
-    return <DevAdminPasscodeGate />;
-  }
-
   return (
     <>
       <SignedOut>
-        <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mb-4 shadow-xl">
-            <Lock className="w-8 h-8 text-[#e8a33d]" />
+        <div className="flex flex-col items-center justify-center py-12 px-4">
+          <div className="mb-6 text-center max-w-md">
+            <div className="w-12 h-12 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mx-auto mb-3 shadow-xl">
+              <Lock className="w-6 h-6 text-[#e8a33d]" />
+            </div>
+            <h2 className="font-display font-bold text-white text-2xl tracking-wide">
+              Admin Portal Sign In
+            </h2>
+            <p className="text-xs text-[#71717a] mt-1 leading-relaxed">
+              Sign in or create an account to manage Africa BR Calendar tournaments and scrim schedules. Only authorized admin emails will be granted access.
+            </p>
           </div>
-          <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
-            Admin Authentication Required
-          </h2>
-          <p className="text-sm text-[#71717a] max-w-sm mb-6 leading-relaxed">
-            Sign in with an authorized administrator account to add, edit, or remove events on the Africa BR Calendar.
-          </p>
-          <SignInButton mode="modal">
-            <button className="px-6 py-2.5 rounded-xl text-sm font-extrabold text-black shadow-xl hover:scale-[1.03] transition-transform"
-              style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}>
-              Sign In to Admin Portal
-            </button>
-          </SignInButton>
+
+          <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
+            <SignIn routing="hash" />
+          </div>
         </div>
       </SignedOut>
 
