@@ -2,26 +2,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { saveEvent, deleteEvent, getEventById } from "@/lib/kv";
 import { CalendarEvent } from "@/types/event";
 import { sendDiscordCreateNotification, sendDiscordEditNotification } from "@/lib/discord";
+import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-
-async function isAuthorized(req: NextRequest): Promise<{ userId: string | null }> {
+async function isAuthorized(req: NextRequest): Promise<{ userId: string | null; authorized: boolean }> {
   try {
-    const { getAuth } = await import("@clerk/nextjs/server");
+    const { getAuth, clerkClient } = await import("@clerk/nextjs/server");
     const { userId } = getAuth(req);
-    return { userId };
+
+    if (!userId) {
+      return { userId: null, authorized: false };
+    }
+
+    try {
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
+      const email = user?.primaryEmailAddress?.emailAddress;
+
+      if (!isAuthorizedAdminEmail(email)) {
+        return { userId, authorized: false };
+      }
+    } catch {
+      // If fetching user fails, fallback to user ID check
+    }
+
+    return { userId, authorized: true };
   } catch {
-    // Clerk not configured or key invalid — fallback to dev admin mode
-    return { userId: "dev-admin-user" };
+    // If Clerk is not set up, allow dev admin session
+    return { userId: "dev-admin-user", authorized: true };
   }
 }
 
 // POST: Create a new event
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await isAuthorized(request);
+    const { userId, authorized } = await isAuthorized(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin permissions required" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     const newEvent: CalendarEvent = {
@@ -52,7 +76,14 @@ export async function POST(request: NextRequest) {
 // PUT: Edit an existing event
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = await isAuthorized(request);
+    const { userId, authorized } = await isAuthorized(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin permissions required" },
+        { status: 403 }
+      );
+    }
+
     const body: CalendarEvent = await request.json();
 
     if (!body.id) {
@@ -88,6 +119,14 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete an event
 export async function DELETE(request: NextRequest) {
   try {
+    const { authorized } = await isAuthorized(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin permissions required" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
