@@ -43,7 +43,7 @@ export default function HomePage() {
   const [dayPopover, setDayPopover] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
 
   // Scroll ref passed into GridView
-  const scrollFnRef = useRef<((dir: "prev" | "next") => void) | null>(null);
+  const scrollFnRef = useRef<((dir: "prev" | "next" | "today") => void) | null>(null);
 
   // ─── ⌘K shortcut ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function HomePage() {
     setDayPopover({ date, events: evts });
   }, []);
 
-  const handleScrollToMonth = useCallback((dir: "prev" | "next") => {
+  const handleScrollToMonth = useCallback((dir: "prev" | "next" | "today") => {
     scrollFnRef.current?.(dir);
   }, []);
 
