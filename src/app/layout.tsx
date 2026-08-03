@@ -27,7 +27,9 @@ export default function RootLayout({
   const isValidClerkKey =
     publishableKey &&
     publishableKey.startsWith("pk_") &&
-    !publishableKey.includes("sample_key");
+    !publishableKey.includes("sample_key") &&
+    !publishableKey.includes("\n") &&
+    !publishableKey.includes("\r");
 
   return (
     <html lang="en">
