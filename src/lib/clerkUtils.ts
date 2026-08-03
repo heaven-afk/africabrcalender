@@ -24,14 +24,14 @@ export function isValidClerkPublishableKey(key: string | undefined): boolean {
 
   try {
     const parsed = parsePublishableKey(k);
-    return Boolean(parsed && (parsed.frontendApi || parsed.raw));
+    return Boolean(parsed && parsed.frontendApi);
   } catch {
     // Retry with trailing '$' stripped if Vercel appended an extra '$'
     try {
       if (k.endsWith("$")) {
         const cleanKey = k.slice(0, -1);
         const parsed = parsePublishableKey(cleanKey);
-        return Boolean(parsed && (parsed.frontendApi || parsed.raw));
+        return Boolean(parsed && parsed.frontendApi);
       }
     } catch {
       return false;
