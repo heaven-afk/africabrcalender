@@ -1,6 +1,4 @@
-import "@/lib/clerkSanitize";
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
 import { saveEvent, deleteEvent, getEventById } from "@/lib/kv";
 import { CalendarEvent } from "@/types/event";
 import { sendDiscordCreateNotification, sendDiscordEditNotification } from "@/lib/discord";
@@ -9,12 +7,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 
-function isAuthorized(req: NextRequest): { userId: string | null } {
+async function isAuthorized(req: NextRequest): Promise<{ userId: string | null }> {
   try {
+    const { getAuth } = await import("@clerk/nextjs/server");
     const { userId } = getAuth(req);
     return { userId };
   } catch {
-    // If Clerk is not set up in environment, fallback to dev admin mode
+    // Clerk not configured or key invalid — fallback to dev admin mode
     return { userId: "dev-admin-user" };
   }
 }
@@ -22,7 +21,7 @@ function isAuthorized(req: NextRequest): { userId: string | null } {
 // POST: Create a new event
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = isAuthorized(request);
+    const { userId } = await isAuthorized(request);
     const body = await request.json();
 
     const newEvent: CalendarEvent = {
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
 // PUT: Edit an existing event
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = isAuthorized(request);
+    const { userId } = await isAuthorized(request);
     const body: CalendarEvent = await request.json();
 
     if (!body.id) {
