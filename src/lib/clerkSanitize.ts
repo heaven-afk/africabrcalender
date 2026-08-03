@@ -1,14 +1,22 @@
-// Helper to sanitize Clerk keys by trimming whitespace, trailing $, or quotes.
-// NOTE: We cannot reassign process.env.NEXT_PUBLIC_* vars — Next.js inlines them
-// as string literals at build time, making assignment a syntax error in the minifier.
-// Instead, callers should use the returned values directly.
+// Sanitize Clerk env vars at server startup.
+// IMPORTANT: Only run this in server-side / Node.js contexts.
+// Next.js inlines NEXT_PUBLIC_* values in CLIENT bundles as string literals,
+// so we guard with a typeof check to avoid a Terser syntax error.
 
-export function getSanitizedPublishableKey(): string {
-  const raw = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-  return raw.replace(/[$"'\s]+$/, "").trim();
-}
+if (typeof process !== "undefined" && process.env) {
+  // Sanitize publishable key (safe to mutate in server context)
+  const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (pubKey) {
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = pubKey
+      .replace(/[$"'\s]+$/, "")
+      .trim();
+  }
 
-export function getSanitizedSecretKey(): string {
-  const raw = process.env.CLERK_SECRET_KEY ?? "";
-  return raw.replace(/[$"'\s]+$/, "").trim();
+  // Sanitize secret key
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (secretKey) {
+    process.env.CLERK_SECRET_KEY = secretKey
+      .replace(/[$"'\s]+$/, "")
+      .trim();
+  }
 }
