@@ -461,6 +461,18 @@ function AdminDashboard() {
 
 /* ─── Main Admin Page export ─────────────────────────────────────────────── */
 export default function AdminPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100 items-center justify-center p-24 gap-3">
+        <Loader2 className="w-6 h-6 text-[#e8a33d] animate-spin" />
+        <span className="text-sm text-[#52525b]">Loading Admin Portal…</span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100">
       {/* Header */}
