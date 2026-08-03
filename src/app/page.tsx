@@ -6,6 +6,7 @@ import React, {
 import { format } from "date-fns";
 import { Header, ViewMode } from "@/components/Header";
 import { FiltersBar } from "@/components/FiltersBar";
+import { NextEventCountdown } from "@/components/NextEventCountdown";
 import { ListView } from "@/components/ListView";
 import { GridView } from "@/components/GridView";
 import { WeekView } from "@/components/WeekView";
@@ -53,7 +54,7 @@ export default function HomePage() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  // ─── Fetch ALL events (not just one month) for grid view ──────────────────
+  // ─── Fetch ALL events for grid view ──────────────────
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,7 +63,7 @@ export default function HomePage() {
         headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
       });
       const json = await res.json();
-      if (json.success) setAllEvents(json.data);
+      if (json.success && Array.isArray(json.data)) setAllEvents(json.data);
     } catch (err) {
       console.error("Failed to load events:", err);
     } finally {
@@ -72,7 +73,6 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchEvents();
-    // Re-fetch on tab focus (after creating events on /admin)
     const onVisible = () => { if (document.visibilityState === "visible") fetchEvents(); };
     const onFocus = () => fetchEvents();
     document.addEventListener("visibilitychange", onVisible);
@@ -122,12 +122,19 @@ export default function HomePage() {
     scrollFnRef.current?.(dir);
   }, []);
 
+  // Return to current date (Today)
+  const handleToday = useCallback(() => {
+    const today = new Date();
+    setCurrentDate(today);
+  }, []);
+
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100">
 
       <Header
         currentDate={currentDate}
+        onToday={handleToday}
         onScrollToMonth={handleScrollToMonth}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -141,7 +148,7 @@ export default function HomePage() {
 
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* Page heading (small, subtle) */}
+        {/* Page heading */}
         <div className="mb-5">
           <h1 className="font-display font-bold text-white text-xl sm:text-2xl tracking-wide">
             Africa BR Esports Calendar
@@ -150,6 +157,9 @@ export default function HomePage() {
             Tournaments, ranking ladders &amp; daily scrims across African Battle Royale esports.
           </p>
         </div>
+
+        {/* Live / Next Event Countdown Banner */}
+        <NextEventCountdown events={allEvents} onSelectEvent={setSelectedEvent} />
 
         {/* Filters */}
         <FiltersBar

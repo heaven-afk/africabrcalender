@@ -3,13 +3,14 @@
 import React from "react";
 import {
   LayoutGrid, Calendar, CalendarDays, List, Trophy,
-  Search, Share2, HelpCircle, ChevronLeft, ChevronRight,
+  Search, Share2, HelpCircle, ChevronLeft, ChevronRight, CalendarCheck,
 } from "lucide-react";
 
 export type ViewMode = "grid" | "list" | "week" | "tournaments";
 
 interface HeaderProps {
   currentDate: Date;
+  onToday: () => void;
   onScrollToMonth: (direction: "prev" | "next") => void;
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
@@ -30,6 +31,7 @@ const TOOLBAR_VIEWS = [
 
 export const Header: React.FC<HeaderProps> = ({
   currentDate,
+  onToday,
   onScrollToMonth,
   viewMode,
   onViewModeChange,
@@ -71,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Center: prev/next month scroll + view toolbar */}
+        {/* Center: prev/next month scroll + Today button + view toolbar */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
           {/* Prev/Next — scroll in grid view */}
           <button
@@ -81,12 +83,23 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
+          
           <button
             onClick={() => onScrollToMonth("next")}
             className="toolbar-btn"
             title="Next month"
           >
             <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
+
+          {/* Today / Return to Current Date button */}
+          <button
+            onClick={onToday}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-[11px] font-bold text-[#e8a33d] bg-[#e8a33d]/10 hover:bg-[#e8a33d]/20 border border-[#e8a33d]/30 transition-all shrink-0 ml-0.5"
+            title="Return to Today"
+          >
+            <CalendarCheck className="w-3 h-3 text-[#e8a33d]" />
+            <span>Today</span>
           </button>
 
           <div className="w-px h-3.5 sm:h-4 bg-[#27272a] mx-0.5 shrink-0" />
