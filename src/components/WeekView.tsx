@@ -66,7 +66,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, onSelec
           return (
             <div
               key={day.toISOString()}
-              className={`rounded-xl border p-3 min-h-[160px] transition-all ${
+              className={`rounded-xl border p-2.5 sm:p-3 min-h-[100px] sm:min-h-[160px] transition-all ${
                 today
                   ? "border-gold-500/50 bg-gold-500/5"
                   : currentMonthDay

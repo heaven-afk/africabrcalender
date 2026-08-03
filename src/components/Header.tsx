@@ -3,7 +3,7 @@
 import React from "react";
 import {
   LayoutGrid, Calendar, CalendarDays, List, Trophy,
-  Search, Share2, HelpCircle, Settings, ChevronLeft, ChevronRight,
+  Search, Share2, HelpCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 export type ViewMode = "grid" | "list" | "week" | "tournaments";
@@ -21,20 +21,11 @@ interface HeaderProps {
   availableRegions: string[];
 }
 
-const VIEWS = [
-  { id: "grid" as ViewMode,        icon: <LayoutGrid className="w-4 h-4" />,    label: "Grid" },
-  { id: "list" as ViewMode,        icon: <CalendarDays className="w-4 h-4" />,  label: "Calendar" },
-  { id: "week" as ViewMode,        icon: <Calendar className="w-4 h-4" />,      label: "Week" },
-  { id: "tournaments" as ViewMode, icon: <Trophy className="w-4 h-4" />,        label: "Tournaments" },
-  { id: "list" as ViewMode,        icon: <List className="w-4 h-4" />,          label: "List" },
-];
-
-// deduplicated
 const TOOLBAR_VIEWS = [
-  { id: "grid" as ViewMode,        icon: <LayoutGrid className="w-[15px] h-[15px]" />, label: "Grid" },
-  { id: "list" as ViewMode,        icon: <CalendarDays className="w-[15px] h-[15px]" />, label: "Calendar" },
-  { id: "week" as ViewMode,        icon: <Calendar className="w-[15px] h-[15px]" />,   label: "Week" },
-  { id: "tournaments" as ViewMode, icon: <Trophy className="w-[15px] h-[15px]" />,     label: "Tournaments" },
+  { id: "grid" as ViewMode,        icon: <LayoutGrid className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" />, label: "Grid" },
+  { id: "list" as ViewMode,        icon: <CalendarDays className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" />, label: "Calendar" },
+  { id: "week" as ViewMode,        icon: <Calendar className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" />,   label: "Week" },
+  { id: "tournaments" as ViewMode, icon: <Trophy className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" />,     label: "Tournaments" },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -54,22 +45,22 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Gold accent line */}
       <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg,#e8a33d,#c9821f)" }} />
 
-      <div className="flex items-center justify-between px-4 sm:px-6 h-11 gap-3">
+      <div className="flex items-center justify-between px-3 sm:px-6 h-11 gap-1.5 sm:gap-3">
 
-        {/* Left: wordmark + region */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Left: wordmark */}
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex flex-col leading-none">
-            <span className="font-display font-bold text-white text-[13px] tracking-[0.12em] uppercase">Africa</span>
-            <span className="font-display font-semibold text-gold text-[9px] tracking-[0.2em] uppercase mt-0.5">BR Calendar</span>
+            <span className="font-display font-bold text-white text-[12px] sm:text-[13px] tracking-[0.12em] uppercase">Africa</span>
+            <span className="font-display font-semibold text-gold text-[8px] sm:text-[9px] tracking-[0.2em] uppercase mt-0.5">BR Calendar</span>
           </div>
 
           {availableRegions.length > 0 && (
             <>
-              <div className="hidden sm:block w-px h-4 bg-surface-border" />
+              <div className="hidden md:block w-px h-4 bg-surface-border" />
               <select
                 value={selectedRegion || ""}
                 onChange={(e) => onRegionChange(e.target.value || null)}
-                className="hidden sm:block bg-[#18181b] border border-[#27272a] hover:border-[#52525b] text-zinc-300 text-[11px] font-medium rounded-lg px-2 py-1 outline-none cursor-pointer transition-colors"
+                className="hidden md:block bg-[#18181b] border border-[#27272a] hover:border-[#52525b] text-zinc-300 text-[11px] font-medium rounded-lg px-2 py-1 outline-none cursor-pointer transition-colors"
               >
                 <option value="">All regions</option>
                 {availableRegions.map((r) => (
@@ -81,24 +72,24 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center: prev/next month scroll + view toolbar */}
-        <div className="flex items-center gap-1.5">
-          {/* Prev/Next — just scroll in grid view */}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+          {/* Prev/Next — scroll in grid view */}
           <button
             onClick={() => onScrollToMonth("prev")}
             className="toolbar-btn"
             title="Previous month"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
           <button
             onClick={() => onScrollToMonth("next")}
             className="toolbar-btn"
             title="Next month"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
-          <div className="w-px h-4 bg-[#27272a] mx-0.5" />
+          <div className="w-px h-3.5 sm:h-4 bg-[#27272a] mx-0.5 shrink-0" />
 
           {/* View mode toolbar */}
           {TOOLBAR_VIEWS.map((v) => (
@@ -114,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 shrink-0">
           {/* ⌘K */}
           <button
             onClick={onCommandPalette}
@@ -125,10 +116,10 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="kbd">⌘</span><span className="kbd">K</span>
           </button>
           <button onClick={onCommandPalette} className="toolbar-btn sm:hidden" title="Search">
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onExport} className="toolbar-btn" title="Export"><Share2 className="w-[15px] h-[15px]" /></button>
-          <button onClick={onWalkthrough} className="toolbar-btn" title="Help"><HelpCircle className="w-[15px] h-[15px]" /></button>
+          <button onClick={onExport} className="toolbar-btn" title="Export"><Share2 className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" /></button>
+          <button onClick={onWalkthrough} className="toolbar-btn" title="Help"><HelpCircle className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px]" /></button>
         </div>
 
       </div>
