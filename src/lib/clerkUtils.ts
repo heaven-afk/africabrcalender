@@ -1,3 +1,5 @@
+import { parsePublishableKey } from "@clerk/shared/keys";
+
 /**
  * Sanitize a Clerk Publishable Key string
  */
@@ -10,12 +12,18 @@ export function sanitizeClerkKey(key: string | undefined): string {
 }
 
 /**
- * Safely validate Clerk Publishable Key string.
- * Accepts any key starting with pk_test_ or pk_live_.
+ * Safely validate Clerk Publishable Key string using Clerk's official key parser.
+ * Returns true ONLY if parsePublishableKey succeeds.
  */
 export function isValidClerkPublishableKey(key: string | undefined): boolean {
   const k = sanitizeClerkKey(key);
   if (!k) return false;
   if (k.includes("sample_key")) return false;
-  return (k.startsWith("pk_test_") || k.startsWith("pk_live_")) && k.length > 20;
+
+  try {
+    const parsed = parsePublishableKey(k);
+    return Boolean(parsed && parsed.frontendApi);
+  } catch {
+    return false;
+  }
 }
