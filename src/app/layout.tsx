@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-
-// Load ClerkProvider only on the client (ssr: false) so the server never
-// imports @clerk/nextjs — this prevents atob() crashing on a malformed key.
-const ClerkProviderWrapper = dynamic(
-  () =>
-    import("@/components/ClerkProviderWrapper").then(
-      (m) => m.ClerkProviderWrapper
-    ),
-  { ssr: false }
-);
 
 export const metadata: Metadata = {
   title: "Africa BR Calendar — Battle Royale Esports Community Calendar",
@@ -51,9 +41,9 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-neutral-100 antialiased selection:bg-gold-500 selection:text-black">
         {isValidClerkKey ? (
-          <ClerkProviderWrapper publishableKey={publishableKey}>
+          <ClerkProvider publishableKey={publishableKey}>
             {children}
-          </ClerkProviderWrapper>
+          </ClerkProvider>
         ) : (
           children
         )}
