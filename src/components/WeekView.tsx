@@ -42,7 +42,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, onSelec
     });
   };
 
-  const totalEventsThisWeek = days.reduce((acc, d) => acc + getEventsForDay(d).length, 0);
+  const totalEventsThisWeek = days.reduce((acc: number, d: Date) => acc + getEventsForDay(d).length, 0);
 
   return (
     <div className="space-y-4">
@@ -58,7 +58,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, onSelec
 
       {/* Day columns */}
       <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
-        {days.map((day) => {
+        {days.map((day: Date) => {
           const dayEvents = getEventsForDay(day);
           const today = isToday(day);
           const currentMonthDay = isSameMonth(day, currentDate);

@@ -129,7 +129,7 @@ const MonthBlock: React.FC<{
 
       {/* Day cells */}
       <div className="grid grid-cols-7 gap-px">
-        {days.map((day, idx) => {
+        {days.map((day: Date, idx: number) => {
           const ds = format(day, "yyyy-MM-dd");
           const inMonth = isSameMonth(day, month);
           const today = isToday(day);
@@ -231,7 +231,7 @@ export const GridView: React.FC<GridViewProps> = ({
 
       {/* 2-column month grid */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-        {months.map((month, i) => {
+        {months.map((month: Date, i: number) => {
           const monthStr = format(month, "yyyy-MM");
           // Get events for this specific month
           const monthEvents = allEvents.filter((evt) => {
