@@ -13,7 +13,7 @@ export function isValidClerkPublishableKey(key: string | undefined): boolean {
 
   try {
     const parsed = parsePublishableKey(k);
-    return Boolean(parsed && parsed.frontendApi && parsed.publishableKey);
+    return Boolean(parsed && parsed.frontendApi);
   } catch {
     return false;
   }
