@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
-  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Tv, ShieldAlert, Lock, LogOut,
+  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Tv, ShieldAlert, Lock, LogOut, MessageSquare,
 } from "lucide-react";
 import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
