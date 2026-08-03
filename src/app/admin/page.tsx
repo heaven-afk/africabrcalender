@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignIn, SignInButton, SignUpButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
   Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, ShieldAlert, Lock, LogOut, MessageSquare,
@@ -488,11 +488,25 @@ export default function AdminPage() {
                 <Lock className="w-6 h-6 text-[#e8a33d]" />
               </div>
               <h2 className="font-display font-bold text-white text-2xl tracking-wide">
-                Admin Portal Sign In
+                Admin Portal Authentication
               </h2>
               <p className="text-xs text-[#71717a] mt-1 leading-relaxed">
-                Sign in or create an account to manage Africa BR Calendar tournaments and scrim schedules. Only authorized admin emails will be granted access.
+                Sign in or create an account. Only authorized emails listed in <code className="text-[#e8a33d] bg-black/40 px-1 py-0.5 rounded">NEXT_PUBLIC_ADMIN_EMAILS</code> will be granted access to manage calendar events.
               </p>
+
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <SignInButton mode="modal">
+                  <button className="px-5 py-2 rounded-xl text-xs font-extrabold text-black shadow-lg hover:scale-[1.03] transition-transform"
+                    style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}>
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#18181b] border border-[#27272a] hover:bg-[#27272a] transition-all">
+                    Create Account
+                  </button>
+                </SignUpButton>
+              </div>
             </div>
 
             <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
