@@ -9,6 +9,7 @@ import { ScrimRecurrence } from "@/types/event";
  */
 export function getOverlappingMonths(startDate: string, endDate: string): string[] {
   const months: string[] = [];
+  if (!startDate || !endDate) return months;
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -34,25 +35,35 @@ export function getOverlappingMonths(startDate: string, endDate: string): string
  */
 export function isScrimActiveOnDate(
   dateStr: string,
-  recurrence: ScrimRecurrence,
+  recurrence: ScrimRecurrence | null | undefined,
   startDate: string,
   endDate: string
 ): boolean {
+  if (!recurrence) return false;
+  if (!startDate || !endDate || !dateStr) return false;
   if (dateStr < startDate || dateStr > endDate) return false;
-  if (recurrence.exceptions.includes(dateStr)) return false;
+  if (Array.isArray(recurrence.exceptions) && recurrence.exceptions.includes(dateStr)) return false;
+  
   const d = new Date(`${dateStr}T12:00:00Z`);
+  if (isNaN(d.getTime())) return false;
+  
   const dayOfWeek = d.getUTCDay();
-  return recurrence.daysOfWeek.includes(dayOfWeek);
+  return Array.isArray(recurrence.daysOfWeek) ? recurrence.daysOfWeek.includes(dayOfWeek) : false;
 }
 
 /**
  * Extract 2-letter uppercase initials from Org Name
  */
 export function getOrgInitials(orgName: string): string {
-  if (!orgName) return "AF";
-  const words = orgName.trim().split(/\s+/);
+  if (!orgName || typeof orgName !== "string") return "AF";
+  const trimmed = orgName.trim();
+  if (!trimmed) return "AF";
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "AF";
   if (words.length === 1) {
     return words[0].slice(0, 2).toUpperCase();
   }
-  return (words[0][0] + words[1][0]).toUpperCase();
+  const firstLetter = words[0][0] || "";
+  const secondLetter = words[1][0] || "";
+  return (firstLetter + secondLetter).toUpperCase() || "AF";
 }
