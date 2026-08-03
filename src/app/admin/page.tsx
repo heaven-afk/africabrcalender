@@ -5,28 +5,24 @@ import Link from "next/link";
 import { SignedIn, SignedOut, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
-  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Tv, ShieldAlert, Lock, LogOut, MessageSquare,
+  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, ShieldAlert, Lock, LogOut, MessageSquare,
 } from "lucide-react";
 import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
-  try {
-    const { user } = useUser();
-    return (
-      <SignedIn>
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs text-[#71717a] hidden sm:block">
-            {user?.primaryEmailAddress?.emailAddress || user?.fullName}
-          </span>
-          <UserButton afterSignOutUrl="/" />
-        </div>
-      </SignedIn>
-    );
-  } catch {
-    return null;
-  }
+  const { user } = useUser();
+  return (
+    <SignedIn>
+      <div className="flex items-center gap-2.5">
+        <span className="text-xs text-[#71717a] hidden sm:block">
+          {user?.primaryEmailAddress?.emailAddress || user?.fullName}
+        </span>
+        <UserButton afterSignOutUrl="/" />
+      </div>
+    </SignedIn>
+  );
 }
 
 /* ─── Input / label atoms ────────────────────────────────────────────────── */
@@ -55,7 +51,7 @@ const DAYS = [
   { label: "Thu", val: 4 }, { label: "Fri", val: 5 }, { label: "Sat", val: 6 }, { label: "Sun", val: 0 },
 ];
 
-/* ─── Admin Content (Secured) ────────────────────────────────────────────── */
+/* ─── Admin Content (Secured by Email Permission) ───────────────────────── */
 function AdminContent() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
@@ -463,48 +459,6 @@ function AdminDashboard() {
   );
 }
 
-function AdminAuthWrapper() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center p-24 gap-3">
-        <Loader2 className="w-5 h-5 text-[#e8a33d] animate-spin" />
-        <span className="text-sm text-[#52525b]">Loading auth…</span>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <SignedOut>
-        <div className="flex flex-col items-center justify-center py-12 px-4">
-          <div className="mb-6 text-center max-w-md">
-            <div className="w-12 h-12 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mx-auto mb-3 shadow-xl">
-              <Lock className="w-6 h-6 text-[#e8a33d]" />
-            </div>
-            <h2 className="font-display font-bold text-white text-2xl tracking-wide">
-              Admin Portal Sign In
-            </h2>
-            <p className="text-xs text-[#71717a] mt-1 leading-relaxed">
-              Sign in or create an account to manage Africa BR Calendar tournaments and scrim schedules. Only authorized admin emails will be granted access.
-            </p>
-          </div>
-
-          <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
-            <SignIn routing="hash" />
-          </div>
-        </div>
-      </SignedOut>
-
-      <SignedIn>
-        <AdminContent />
-      </SignedIn>
-    </>
-  );
-}
-
 /* ─── Main Admin Page export ─────────────────────────────────────────────── */
 export default function AdminPage() {
   return (
@@ -527,7 +481,29 @@ export default function AdminPage() {
 
       {/* Main Auth View */}
       <div className="flex-1">
-        <AdminAuthWrapper />
+        <SignedOut>
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="mb-6 text-center max-w-md">
+              <div className="w-12 h-12 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mx-auto mb-3 shadow-xl">
+                <Lock className="w-6 h-6 text-[#e8a33d]" />
+              </div>
+              <h2 className="font-display font-bold text-white text-2xl tracking-wide">
+                Admin Portal Sign In
+              </h2>
+              <p className="text-xs text-[#71717a] mt-1 leading-relaxed">
+                Sign in or create an account to manage Africa BR Calendar tournaments and scrim schedules. Only authorized admin emails will be granted access.
+              </p>
+            </div>
+
+            <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
+              <SignIn routing="hash" />
+            </div>
+          </div>
+        </SignedOut>
+
+        <SignedIn>
+          <AdminContent />
+        </SignedIn>
       </div>
     </div>
   );

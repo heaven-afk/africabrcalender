@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ClerkErrorBoundary } from "@/components/ClerkErrorBoundary";
-import { isValidClerkPublishableKey, sanitizeClerkKey } from "@/lib/clerkUtils";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,10 +21,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const rawKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-  const publishableKey = sanitizeClerkKey(rawKey);
-  const validKey = isValidClerkPublishableKey(publishableKey);
-
   return (
     <html lang="en">
       <head>
@@ -38,13 +32,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background text-neutral-100 antialiased selection:bg-gold-500 selection:text-black">
-        {validKey ? (
-          <ClerkErrorBoundary publishableKey={publishableKey}>
-            {children}
-          </ClerkErrorBoundary>
-        ) : (
-          children
-        )}
+        {children}
       </body>
     </html>
   );
