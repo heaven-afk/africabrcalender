@@ -14,7 +14,7 @@ interface GridViewProps {
   events: CalendarEvent[];
   allEvents: CalendarEvent[];
   onDayClick: (date: string, events: CalendarEvent[]) => void;
-  scrollToRef?: React.MutableRefObject<((dir: "prev" | "next") => void) | null>;
+  scrollToRef?: React.MutableRefObject<((dir: "prev" | "next" | "today") => void) | null>;
 }
 
 /** Predefined brand colors for categories when we can't sample the logo */
@@ -58,6 +58,7 @@ function buildCellBg(dayEvents: CalendarEvent[]): React.CSSProperties {
     .slice(0, 4)
     .map((c, i, arr) => `rgba(${c},0.4) ${Math.round((i / (arr.length - 1)) * 100)}%`)
     .join(", ");
+
   return {
     background: `linear-gradient(135deg, ${stops}), #0e0e10`,
   };
@@ -112,7 +113,7 @@ const MonthBlock: React.FC<{
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   return (
-    <div ref={monthRef} className="w-full">
+    <div ref={monthRef} className="w-full scroll-mt-20">
       {/* Month label */}
       <h3 className="font-display font-bold text-white text-base tracking-wide mb-2">
         {format(month, "MMMM")}
@@ -145,7 +146,7 @@ const MonthBlock: React.FC<{
               style={inMonth ? cellBg : { background: "transparent" }}
               className={`cal-cell ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
                 !inMonth ? "opacity-0 pointer-events-none" : ""
-              } ${today ? "ring-1 ring-[#e8a33d]/60" : ""}`}
+              } ${today ? "ring-1 ring-[#e8a33d] shadow-[0_0_12px_rgba(232,163,61,0.3)]" : ""}`}
             >
               {inMonth && (
                 <>
@@ -191,8 +192,18 @@ export const GridView: React.FC<GridViewProps> = ({
   // Refs to each month section for scrolling
   const monthRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const scrollToMonth = useCallback((dir: "prev" | "next") => {
-    // Find the month currently most visible in the viewport
+  const scrollToMonth = useCallback((dir: "prev" | "next" | "today") => {
+    if (dir === "today") {
+      const todayEl = document.querySelector(".cal-cell.is-today");
+      if (todayEl) {
+        todayEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        const todayIndex = new Date().getMonth();
+        monthRefs.current[todayIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
     let closest = 0;
     let closestDist = Infinity;
     monthRefs.current.forEach((el, i) => {
@@ -236,7 +247,6 @@ export const GridView: React.FC<GridViewProps> = ({
           // Get events for this specific month
           const monthEvents = allEvents.filter((evt) => {
             if (evt.category === "scrim") {
-              // Check if scrim overlaps this month
               const mStart = format(startOfMonth(month), "yyyy-MM-dd");
               const mEnd = format(endOfMonth(month), "yyyy-MM-dd");
               return evt.startDate <= mEnd && evt.endDate >= mStart;

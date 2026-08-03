@@ -126,6 +126,7 @@ export default function HomePage() {
   const handleToday = useCallback(() => {
     const today = new Date();
     setCurrentDate(today);
+    scrollFnRef.current?.("today");
   }, []);
 
   // ─── Render ───────────────────────────────────────────────────────────────

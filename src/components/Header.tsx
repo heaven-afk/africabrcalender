@@ -11,7 +11,7 @@ export type ViewMode = "grid" | "list" | "week" | "tournaments";
 interface HeaderProps {
   currentDate: Date;
   onToday: () => void;
-  onScrollToMonth: (direction: "prev" | "next") => void;
+  onScrollToMonth: (direction: "prev" | "next" | "today") => void;
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
   onCommandPalette: () => void;
