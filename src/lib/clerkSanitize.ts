@@ -1,18 +1,14 @@
-// Helper to sanitize Clerk keys by trimming whitespace, trailing $, or quotes
-export function sanitizeClerkKeys() {
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    let key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.trim();
-    // Remove accidental trailing $ or quotes
-    key = key.replace(/[$"']+$/, "").trim();
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = key;
-  }
+// Helper to sanitize Clerk keys by trimming whitespace, trailing $, or quotes.
+// NOTE: We cannot reassign process.env.NEXT_PUBLIC_* vars — Next.js inlines them
+// as string literals at build time, making assignment a syntax error in the minifier.
+// Instead, callers should use the returned values directly.
 
-  if (process.env.CLERK_SECRET_KEY) {
-    let key = process.env.CLERK_SECRET_KEY.trim();
-    key = key.replace(/[$"']+$/, "").trim();
-    process.env.CLERK_SECRET_KEY = key;
-  }
+export function getSanitizedPublishableKey(): string {
+  const raw = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+  return raw.replace(/[$"'\s]+$/, "").trim();
 }
 
-// Automatically execute on import
-sanitizeClerkKeys();
+export function getSanitizedSecretKey(): string {
+  const raw = process.env.CLERK_SECRET_KEY ?? "";
+  return raw.replace(/[$"'\s]+$/, "").trim();
+}
