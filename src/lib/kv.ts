@@ -28,17 +28,34 @@ import { readJsonStore, writeJsonStore } from "./fileStore";
 export async function getEvents(month?: string): Promise<CalendarEvent[]> {
   try {
     if (isKvConfigured()) {
+      let eventIds = (await kvClient.smembers("events:all")) as string[];
+      
+      // Auto-seed KV with pre-existing events from data/events.json if KV is empty
+      if (!eventIds || eventIds.length === 0) {
+        console.log("KV database is empty. Auto-migrating pre-existing events from data/events.json...");
+        const store = readJsonStore();
+        for (const evt of store.values()) {
+          const months = getOverlappingMonths(evt.startDate, evt.endDate);
+          await kvClient.set(`event:${evt.id}`, evt);
+          await kvClient.sadd("events:all", evt.id);
+          for (const m of months) {
+            await kvClient.sadd(`events:month:${m}`, evt.id);
+          }
+        }
+        eventIds = (await kvClient.smembers("events:all")) as string[];
+      }
+
+      if (!eventIds || eventIds.length === 0) return [];
+
       if (month) {
-        const eventIds = (await kvClient.smembers(`events:month:${month}`)) as string[];
-        if (!eventIds || eventIds.length === 0) return [];
-        const keys = eventIds.map((id: string) => `event:${id}`);
+        const monthIds = (await kvClient.smembers(`events:month:${month}`)) as string[];
+        if (!monthIds || monthIds.length === 0) return [];
+        const keys = monthIds.map((id: string) => `event:${id}`);
         const events = (await kvClient.mget(...keys)) as CalendarEvent[];
         return (events.filter(Boolean) as CalendarEvent[]).sort(
           (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
         );
       } else {
-        const eventIds = (await kvClient.smembers("events:all")) as string[];
-        if (!eventIds || eventIds.length === 0) return [];
         const keys = eventIds.map((id: string) => `event:${id}`);
         const events = (await kvClient.mget(...keys)) as CalendarEvent[];
         return (events.filter(Boolean) as CalendarEvent[]).sort(
