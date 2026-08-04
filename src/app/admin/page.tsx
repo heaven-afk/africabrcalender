@@ -516,7 +516,12 @@ export default function AdminPage() {
             </div>
 
             <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
-              <SignIn routing="hash" />
+              <SignIn
+                routing="hash"
+                afterSignInUrl="/admin"
+                afterSignUpUrl="/admin"
+                signUpUrl="/admin"
+              />
             </div>
           </div>
         </SignedOut>

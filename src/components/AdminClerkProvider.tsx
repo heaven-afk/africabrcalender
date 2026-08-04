@@ -54,7 +54,13 @@ class AdminClerkErrorBoundary extends Component<
     }
 
     return (
-      <ClerkProvider publishableKey={this.props.publishableKey}>
+      <ClerkProvider
+        publishableKey={this.props.publishableKey}
+        afterSignInUrl="/admin"
+        afterSignUpUrl="/admin"
+        signUpUrl="/admin"
+        signInUrl="/admin"
+      >
         {this.props.children}
       </ClerkProvider>
     );
