@@ -42,6 +42,8 @@ const CAT_META: Record<EventCategory, { label: string; ring: string; bg: string;
   ranking:    { label: "Ranking",    ring: "border-amber-500",  bg: "bg-amber-500/10",  text: "text-amber-300" },
   tournament: { label: "Tournament", ring: "border-cyan-500",   bg: "bg-cyan-500/10",   text: "text-cyan-300" },
   scrim:      { label: "Scrim",      ring: "border-emerald-500",bg: "bg-emerald-500/10",text: "text-emerald-300" },
+  award:      { label: "Award",      ring: "border-purple-500", bg: "bg-purple-500/10", text: "text-purple-300" },
+  podcast:    { label: "Podcast",    ring: "border-rose-500",   bg: "bg-rose-500/10",   text: "text-rose-300" },
 };
 
 /* ─── Category pill ──────────────────────────────────────────────────────── */
@@ -103,9 +105,12 @@ function AdminContent() {
 
 /* ─── Main Admin Dashboard Component ────────────────────────────────────── */
 function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<"published" | "pending">("published");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [pendingEvents, setPendingEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -132,9 +137,15 @@ function AdminDashboard() {
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/events", { cache: "no-store" });
-      const json = await res.json();
-      if (json.success) setEvents(json.data);
+      const [resAll, resPending] = await Promise.all([
+        fetch("/api/events", { cache: "no-store" }),
+        fetch("/api/admin/events/pending", { cache: "no-store" }),
+      ]);
+      const jsonAll = await resAll.json();
+      const jsonPending = await resPending.json();
+
+      if (jsonAll.success) setEvents(jsonAll.data);
+      if (jsonPending.success) setPendingEvents(jsonPending.data);
     } catch { /* silent */ }
     finally { setLoading(false); }
   };
@@ -144,6 +155,51 @@ function AdminDashboard() {
   const showToast = (type: "success" | "error", text: string) => {
     setToast({ type, text });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  /* ─── Approve Pending Event ──────────────────────────────────────────────── */
+  const handleApprove = async (id: string, name: string) => {
+    setActionId(id);
+    try {
+      const res = await fetch("/api/admin/events/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Approval failed");
+
+      showToast("success", `Event "${name}" approved and published!`);
+      loadEvents();
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to approve event.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  /* ─── Reject Pending Event ──────────────────────────────────────────────── */
+  const handleReject = async (id: string, name: string) => {
+    const reason = window.prompt(`Reject "${name}"? Enter optional reason for submitter:`, "Does not meet calendar requirements.");
+    if (reason === null) return; // user cancelled prompt
+
+    setActionId(id);
+    try {
+      const res = await fetch("/api/admin/events/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, reason }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Rejection failed");
+
+      showToast("success", `Event "${name}" rejected.`);
+      loadEvents();
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to reject event.");
+    } finally {
+      setActionId(null);
+    }
   };
 
   /* ─── Modal helpers ─────────────────────────────────────────────────────── */
@@ -212,6 +268,7 @@ function AdminDashboard() {
         orgName: formOrgName.trim(),
         orgLogoUrl: formOrgLogoUrl.trim() || null,
         region: formRegion.trim() || null,
+        status: "approved",
         streamLinks: formStreamLinks.filter((s) => s.url.trim().length > 0),
         location: {
           discordUrl: formDiscordUrl.trim() || undefined,
@@ -255,7 +312,7 @@ function AdminDashboard() {
       if (!res.ok || !json.success) throw new Error(json.error || "Delete failed");
 
       showToast("success", "Event deleted.");
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      loadEvents();
     } catch (err: any) {
       showToast("error", err.message || "Failed to delete event.");
     }
@@ -277,10 +334,10 @@ function AdminDashboard() {
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Title bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="font-display font-bold text-white text-2xl tracking-wide">Event Management</h1>
-            <p className="text-xs text-[#52525b] mt-0.5">Add, update, or remove tournaments, ranking ladders &amp; scrim schedules.</p>
+            <p className="text-xs text-[#52525b] mt-0.5">Manage published events &amp; review public booked event requests.</p>
           </div>
           <button
             onClick={handleOpenAdd}
@@ -292,13 +349,109 @@ function AdminDashboard() {
           </button>
         </div>
 
-        {/* Events Table / Cards */}
+        {/* Tabs for Published vs Pending Booked Events */}
+        <div className="flex items-center gap-2 mb-6 border-b border-[#27272a] pb-2">
+          <button
+            onClick={() => setActiveTab("published")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "published"
+                ? "bg-[#1c1c20] text-amber-400 border border-amber-500/30 shadow-lg"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            Published Events ({events.length})
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+              activeTab === "pending"
+                ? "bg-[#1c1c20] text-amber-400 border border-amber-500/30 shadow-lg"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Pending Bookings
+            {pendingEvents.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-black animate-pulse">
+                {pendingEvents.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center p-24 gap-3">
             <Loader2 className="w-5 h-5 text-[#e8a33d] animate-spin" />
             <span className="text-sm text-[#52525b]">Loading events…</span>
           </div>
+        ) : activeTab === "pending" ? (
+          /* PENDING BOOKINGS VIEW */
+          pendingEvents.length === 0 ? (
+            <div className="p-16 text-center rounded-2xl bg-[#111113] border border-[#27272a]">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500/60 mx-auto mb-3" />
+              <h3 className="font-display font-bold text-white text-base">No Pending Bookings</h3>
+              <p className="text-xs text-[#52525b] mt-1">All public event booking requests have been reviewed.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingEvents.map((evt) => (
+                <div key={evt.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-[#141417] border border-amber-500/20 hover:border-amber-500/40 transition-colors">
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <CatBadge cat={evt.category} />
+                    <div className="min-w-0">
+                      <div className="font-display font-bold text-white text-base truncate flex items-center gap-2">
+                        {evt.name}
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                          PENDING APPROVAL
+                        </span>
+                      </div>
+                      <div className="text-xs text-[#71717a] mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="text-white/80 font-medium">{evt.orgName}</span>
+                        <span>·</span>
+                        <span>{evt.startDate} – {evt.endDate}</span>
+                        {evt.region && (
+                          <>
+                            <span>·</span>
+                            <span className="text-[#e8a33d]">{evt.region}</span>
+                          </>
+                        )}
+                        {evt.submitterEmail && (
+                          <>
+                            <span>·</span>
+                            <span className="text-cyan-400 font-mono">Submitter: {evt.submitterEmail}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                    <button
+                      onClick={() => handleApprove(evt.id, evt.name)}
+                      disabled={actionId === evt.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                    >
+                      {actionId === evt.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(evt.id, evt.name)}
+                      disabled={actionId === evt.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-all disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : events.length === 0 ? (
+          /* PUBLISHED EVENTS VIEW EMPTY */
           <div className="p-16 text-center rounded-2xl bg-[#111113] border border-[#27272a]">
             <Calendar className="w-10 h-10 text-[#3f3f46] mx-auto mb-3" />
             <h3 className="font-display font-bold text-white text-base">No Events Added Yet</h3>
@@ -309,6 +462,7 @@ function AdminDashboard() {
             </button>
           </div>
         ) : (
+          /* PUBLISHED EVENTS VIEW LIST */
           <div className="space-y-3">
             {events.map((evt) => (
               <div key={evt.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#141417] border border-[#27272a] hover:border-[#3f3f46] transition-colors">
@@ -377,6 +531,8 @@ function AdminDashboard() {
                     <option value="tournament">Tournament</option>
                     <option value="ranking">Ranking Ladder</option>
                     <option value="scrim">Scrim Schedule</option>
+                    <option value="award">Award Ceremony</option>
+                    <option value="podcast">Podcast / Talk Show</option>
                   </select>
                 </div>
               </div>

@@ -36,6 +36,8 @@ function formatDateRange(evt: CalendarEvent): string {
 const catLeft = (category: string) => {
   if (category === "ranking") return "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.6)]";
   if (category === "tournament") return "bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.6)]";
+  if (category === "award") return "bg-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]";
+  if (category === "podcast") return "bg-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.6)]";
   return "bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]";
 };
 

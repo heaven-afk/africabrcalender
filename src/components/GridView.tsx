@@ -21,6 +21,8 @@ const CAT_COLOR: Record<string, string> = {
   ranking:    "245,158,11",   // amber-500
   tournament: "6,182,212",    // cyan-500
   scrim:      "16,185,129",   // emerald-500
+  award:      "168,85,247",   // purple-500
+  podcast:    "244,63,94",    // rose-500
 };
 
 /** Build CSS background for a day cell based on up to 4 active event colors */

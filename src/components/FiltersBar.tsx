@@ -20,6 +20,8 @@ const CATS: { id: EventCategory; label: string; dot: string; active: string }[] 
   { id: "ranking",    label: "Ranking",    dot: "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]",   active: "border-amber-500/40 bg-amber-500/10 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]" },
   { id: "tournament", label: "Tournament", dot: "bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]",     active: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]" },
   { id: "scrim",      label: "Scrim",      dot: "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]", active: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]" },
+  { id: "award",      label: "Award",      dot: "bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]", active: "border-purple-500/40 bg-purple-500/10 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.15)]" },
+  { id: "podcast",    label: "Podcast",    dot: "bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.8)]",     active: "border-rose-500/40 bg-rose-500/10 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.15)]" },
 ];
 
 export const FiltersBar: React.FC<FiltersBarProps> = ({

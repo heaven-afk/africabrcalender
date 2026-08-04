@@ -9,7 +9,7 @@ interface CategoryPillProps {
 export const CategoryPill: React.FC<CategoryPillProps> = ({ category, size = "md" }) => {
   const isSm = size === "sm";
 
-  const styles = {
+  const stylesMap: Record<EventCategory, { label: string; className: string }> = {
     ranking: {
       label: "RANKING",
       className: "border-amber-500/40 bg-amber-500/10 text-amber-300 shadow-[0_0_10px_rgba(232,163,61,0.15)]",
@@ -22,15 +22,25 @@ export const CategoryPill: React.FC<CategoryPillProps> = ({ category, size = "md
       label: "SCRIM",
       className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
     },
-  }[category];
+    award: {
+      label: "AWARD CEREMONY",
+      className: "border-purple-500/40 bg-purple-500/10 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.15)]",
+    },
+    podcast: {
+      label: "PODCAST / TALK SHOW",
+      className: "border-rose-500/40 bg-rose-500/10 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.15)]",
+    },
+  };
+
+  const style = stylesMap[category] || stylesMap.tournament;
 
   return (
     <span
       className={`inline-flex items-center justify-center font-display tracking-wider border rounded-md uppercase font-bold ${
         isSm ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
-      } ${styles.className}`}
+      } ${style.className}`}
     >
-      {styles.label}
+      {style.label}
     </span>
   );
 };

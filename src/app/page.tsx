@@ -15,6 +15,7 @@ import { EventModal } from "@/components/EventModal";
 import { CommandPaletteModal } from "@/components/CommandPaletteModal";
 import { ExportModal } from "@/components/ExportModal";
 import { WalkthroughModal } from "@/components/WalkthroughModal";
+import { BookEventModal } from "@/components/BookEventModal";
 import { DayDetailPopover } from "@/components/DayDetailPopover";
 import { Footer } from "@/components/Footer";
 import { CalendarEvent, EventCategory } from "@/types/event";
@@ -27,7 +28,7 @@ export default function HomePage() {
   // Filters
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([
-    "ranking", "tournament", "scrim",
+    "ranking", "tournament", "scrim", "award", "podcast",
   ]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  const [bookEventOpen, setBookEventOpen] = useState(false);
   const [dayPopover, setDayPopover] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
 
   // Scroll ref passed into GridView
@@ -142,6 +144,7 @@ export default function HomePage() {
         onCommandPalette={() => setCmdOpen(true)}
         onExport={() => setExportOpen(true)}
         onWalkthrough={() => setWalkthroughOpen(true)}
+        onBookEvent={() => setBookEventOpen(true)}
         selectedRegion={selectedRegion}
         onRegionChange={setSelectedRegion}
         availableRegions={availableRegions}
@@ -226,6 +229,12 @@ export default function HomePage() {
       />
 
       <WalkthroughModal open={walkthroughOpen} onClose={() => setWalkthroughOpen(false)} />
+
+      <BookEventModal
+        open={bookEventOpen}
+        onClose={() => setBookEventOpen(false)}
+        onSuccess={fetchEvents}
+      />
 
       {dayPopover && (
         <DayDetailPopover

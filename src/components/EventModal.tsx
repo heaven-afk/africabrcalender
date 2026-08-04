@@ -54,6 +54,10 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
               ? "bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.6)]"
               : event.category === "tournament"
               ? "bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+              : event.category === "award"
+              ? "bg-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.6)]"
+              : event.category === "podcast"
+              ? "bg-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.6)]"
               : "bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.6)]"
           }`}
         />

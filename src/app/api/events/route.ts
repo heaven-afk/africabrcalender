@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
 
     let events = await getEvents(month);
 
+    // Public feed: Only return approved events (or legacy events without status field)
+    events = events.filter((e) => !e.status || e.status === "approved");
+
     // Filter by Category if provided
     if (categoryParam) {
       const categories = categoryParam

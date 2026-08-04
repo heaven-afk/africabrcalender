@@ -13,10 +13,10 @@ interface DayDetailPopoverProps {
 }
 
 const catDot = (c: string) =>
-  c === "ranking" ? "cat-dot-ranking" : c === "tournament" ? "cat-dot-tournament" : "cat-dot-scrim";
+  c === "ranking" ? "cat-dot-ranking" : c === "tournament" ? "cat-dot-tournament" : c === "award" ? "cat-dot-award" : c === "podcast" ? "cat-dot-podcast" : "cat-dot-scrim";
 
 const catText = (c: string) =>
-  c === "ranking" ? "text-amber-400" : c === "tournament" ? "text-cyan-400" : "text-emerald-400";
+  c === "ranking" ? "text-amber-400" : c === "tournament" ? "text-cyan-400" : c === "award" ? "text-purple-400" : c === "podcast" ? "text-rose-400" : "text-emerald-400";
 
 export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({
   date,

@@ -1,4 +1,4 @@
-export type EventCategory = "ranking" | "tournament" | "scrim";
+export type EventCategory = "ranking" | "tournament" | "scrim" | "award" | "podcast";
 
 export interface StreamLink {
   label?: string;
@@ -35,6 +35,9 @@ export interface CalendarEvent {
   createdBy?: string;
   updatedAt?: string;
   updatedBy?: string;
+  status?: "approved" | "pending" | "rejected";
+  submitterEmail?: string;
+  submittedAt?: string;
 }
 
 export interface EventFilterOptions {
@@ -43,3 +46,4 @@ export interface EventFilterOptions {
   region: string | null;
   month: string; // YYYY-MM
 }
+

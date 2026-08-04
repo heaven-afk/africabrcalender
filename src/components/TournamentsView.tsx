@@ -2,7 +2,7 @@
 
 import React from "react";
 import { format, parseISO } from "date-fns";
-import { Trophy, Tv, ExternalLink, ChevronDown, ChevronRight, Gamepad2, Award } from "lucide-react";
+import { Trophy, Tv, ExternalLink, ChevronDown, ChevronRight, Gamepad2, Award, Sparkles, Mic } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 import { OrgLogo } from "./OrgLogo";
 import { CategoryPill } from "./CategoryPill";
@@ -43,6 +43,8 @@ export const TournamentsView: React.FC<TournamentsViewProps> = ({ events, onSele
   const catIcon = (category: string) => {
     if (category === "tournament") return <Trophy className="w-4 h-4 text-cyan-400" />;
     if (category === "ranking") return <Award className="w-4 h-4 text-amber-400" />;
+    if (category === "award") return <Sparkles className="w-4 h-4 text-purple-400" />;
+    if (category === "podcast") return <Mic className="w-4 h-4 text-rose-400" />;
     return <Gamepad2 className="w-4 h-4 text-emerald-400" />;
   };
 

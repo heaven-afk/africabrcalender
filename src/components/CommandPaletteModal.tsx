@@ -109,6 +109,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
   const catColor = (category: string) => {
     if (category === "ranking") return "text-amber-400";
     if (category === "tournament") return "text-cyan-400";
+    if (category === "award") return "text-purple-400";
+    if (category === "podcast") return "text-rose-400";
     return "text-emerald-400";
   };
 

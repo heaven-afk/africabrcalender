@@ -24,6 +24,8 @@ interface WeekViewProps {
 const catBg = (category: string) => {
   if (category === "ranking") return "bg-amber-950/40 border-amber-500/30 hover:border-amber-400/60";
   if (category === "tournament") return "bg-cyan-950/40 border-cyan-500/30 hover:border-cyan-400/60";
+  if (category === "award") return "bg-purple-950/40 border-purple-500/30 hover:border-purple-400/60";
+  if (category === "podcast") return "bg-rose-950/40 border-rose-500/30 hover:border-rose-400/60";
   return "bg-emerald-950/40 border-emerald-500/30 hover:border-emerald-400/60";
 };
 
