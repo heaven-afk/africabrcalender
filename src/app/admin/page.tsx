@@ -322,6 +322,21 @@ function AdminDashboard() {
     }
   };
 
+  const handleMigrateSupabase = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/admin/migrate-supabase", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Migration failed");
+      showToast("success", json.message || "Events synced to Supabase successfully!");
+      loadEvents();
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to sync to Supabase.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       {/* Toast */}
@@ -343,14 +358,26 @@ function AdminDashboard() {
             <h1 className="font-display font-bold text-white text-2xl tracking-wide">Event Management</h1>
             <p className="text-xs text-[#52525b] mt-0.5">Manage published events &amp; review public booked event requests.</p>
           </div>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black font-extrabold text-sm shadow-lg hover:scale-[1.02] transition-transform self-start sm:self-auto"
-            style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            New Event
-          </button>
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <button
+              onClick={handleMigrateSupabase}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 text-xs font-bold transition-all disabled:opacity-50"
+              title="Sync all pre-existing events from data/events.json into Supabase"
+            >
+              <Clock className="w-3.5 h-3.5 text-purple-400" />
+              Sync Events to Supabase
+            </button>
+
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-black font-extrabold text-xs sm:text-sm shadow-lg hover:scale-[1.02] transition-transform"
+              style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              New Event
+            </button>
+          </div>
         </div>
 
         {/* Tabs for Published vs Pending Booked Events */}

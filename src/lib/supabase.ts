@@ -98,7 +98,7 @@ export async function getSupabaseEvents(month?: string): Promise<CalendarEvent[]
 
       if (initialEvents.length > 0) {
         const rowsToInsert = initialEvents.map(mapEventToRow);
-        const { error: insertError } = await client.from("events").insert(rowsToInsert);
+        const { error: insertError } = await client.from("events").upsert(rowsToInsert, { onConflict: "id" });
         if (!insertError) {
           console.log(`[SUPABASE] Successfully auto-migrated ${initialEvents.length} events into Supabase!`);
           return initialEvents.sort(

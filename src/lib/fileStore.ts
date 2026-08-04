@@ -20,7 +20,7 @@ export function ensureDataDir() {
 }
 
 export function readJsonStore(): Map<string, CalendarEvent> {
-  if (memoryCache) {
+  if (memoryCache && memoryCache.size > 0) {
     return memoryCache;
   }
 
