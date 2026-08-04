@@ -90,6 +90,19 @@ const EventLogo: React.FC<{ event: CalendarEvent }> = ({ event }) => {
   );
 };
 
+interface DayCellData {
+  idx: number;
+  ds: string;
+  dayNum: string;
+  inMonth: boolean;
+  today: boolean;
+  dayEvents: CalendarEvent[];
+  hasEvents: boolean;
+  cellBg: React.CSSProperties;
+  displayEvents: CalendarEvent[];
+  overflowCount: number;
+}
+
 /** One month block with memoized date & day rendering */
 const MonthBlock: React.FC<{
   month: Date;
@@ -104,7 +117,7 @@ const MonthBlock: React.FC<{
   const days = useMemo(() => eachDayOfInterval({ start: calStart, end: calEnd }), [calStart, calEnd]);
 
   // Pre-calculate days grid
-  const daysGrid = useMemo(() => {
+  const daysGrid: DayCellData[] = useMemo(() => {
     return days.map((day: Date, idx: number) => {
       const ds = format(day, "yyyy-MM-dd");
       const inMonth = isSameMonth(day, month);
