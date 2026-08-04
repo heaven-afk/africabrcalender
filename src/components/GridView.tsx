@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import {
   format, getYear, eachMonthOfInterval, startOfYear, endOfYear,
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -23,33 +23,37 @@ const CAT_COLOR: Record<string, string> = {
   scrim:      "16,185,129",   // emerald-500
 };
 
-/** Build CSS background for a day cell based on active events */
+/** Build CSS background for a day cell based on up to 4 active event colors */
 function buildCellBg(dayEvents: CalendarEvent[]): React.CSSProperties {
   if (dayEvents.length === 0) return { background: "rgba(18, 18, 24, 0.45)" };
 
-  const colors = dayEvents.map((e) => CAT_COLOR[e.category] || "150,150,160");
+  const colors = dayEvents.slice(0, 4).map((e) => CAT_COLOR[e.category] || "150,150,160");
 
-  if (dayEvents.length === 1) {
+  if (colors.length === 1) {
     const c = colors[0];
     return {
       background: `radial-gradient(circle at 60% 40%, rgba(${c},0.35) 0%, rgba(${c},0.05) 75%), rgba(18,18,24,0.65)`,
     };
   }
 
-  if (dayEvents.length === 2) {
-    const c1 = colors[0], c2 = colors[1];
+  if (colors.length === 2) {
+    const [c1, c2] = colors;
     return {
       background: `linear-gradient(135deg, rgba(${c1},0.35) 0%, rgba(${c2},0.35) 100%), rgba(18,18,24,0.65)`,
     };
   }
 
-  const stops = colors
-    .slice(0, 4)
-    .map((c, i, arr) => `rgba(${c},0.35) ${Math.round((i / (arr.length - 1)) * 100)}%`)
-    .join(", ");
+  if (colors.length === 3) {
+    const [c1, c2, c3] = colors;
+    return {
+      background: `linear-gradient(135deg, rgba(${c1},0.35) 0%, rgba(${c2},0.3) 50%, rgba(${c3},0.35) 100%), rgba(18,18,24,0.65)`,
+    };
+  }
 
+  // 4 or more events: 4-quadrant blended radial background
+  const [c1, c2, c3, c4] = colors;
   return {
-    background: `linear-gradient(135deg, ${stops}), rgba(18,18,24,0.65)`,
+    background: `radial-gradient(circle at 20% 20%, rgba(${c1},0.35) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(${c2},0.35) 0%, transparent 60%), radial-gradient(circle at 20% 80%, rgba(${c3},0.35) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(${c4},0.35) 0%, transparent 60%), rgba(18,18,24,0.65)`,
   };
 }
 
@@ -86,21 +90,48 @@ const EventLogo: React.FC<{ event: CalendarEvent }> = ({ event }) => {
   );
 };
 
-/** One month block */
+/** One month block with memoized date & day rendering */
 const MonthBlock: React.FC<{
   month: Date;
   events: CalendarEvent[];
   onDayClick: (date: string, events: CalendarEvent[]) => void;
   monthRef: (el: HTMLDivElement | null) => void;
-}> = ({ month, events, onDayClick, monthRef }) => {
+}> = React.memo(({ month, events, onDayClick, monthRef }) => {
   const mStart = startOfMonth(month);
   const mEnd = endOfMonth(month);
   const calStart = startOfWeek(mStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(mEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+  const days = useMemo(() => eachDayOfInterval({ start: calStart, end: calEnd }), [calStart, calEnd]);
+
+  // Pre-calculate days grid
+  const daysGrid = useMemo(() => {
+    return days.map((day: Date, idx: number) => {
+      const ds = format(day, "yyyy-MM-dd");
+      const inMonth = isSameMonth(day, month);
+      const today = isToday(day);
+      const dayEvents = inMonth ? getEventsForDay(ds, events) : [];
+      const hasEvents = dayEvents.length > 0;
+      const cellBg = buildCellBg(hasEvents ? dayEvents : []);
+      const displayEvents = dayEvents.slice(0, 4);
+      const overflowCount = dayEvents.length - 4;
+
+      return {
+        idx,
+        ds,
+        dayNum: format(day, "d"),
+        inMonth,
+        today,
+        dayEvents,
+        hasEvents,
+        cellBg,
+        displayEvents,
+        overflowCount,
+      };
+    });
+  }, [days, month, events]);
 
   return (
-    <div ref={monthRef} className="w-full scroll-mt-20 p-4 rounded-2xl liquid-glass-card">
+    <div ref={monthRef} className="w-full scroll-mt-20 p-3.5 sm:p-4 rounded-2xl liquid-glass-card">
       {/* Month label */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
         <h3 className="font-display font-bold text-white text-base sm:text-lg tracking-wide">
@@ -121,15 +152,13 @@ const MonthBlock: React.FC<{
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1.5">
-        {days.map((day: Date, idx: number) => {
-          const ds = format(day, "yyyy-MM-dd");
-          const inMonth = isSameMonth(day, month);
-          const today = isToday(day);
-          const dayEvents = inMonth ? getEventsForDay(ds, events) : [];
-          const hasEvents = dayEvents.length > 0;
-          const cellBg = buildCellBg(hasEvents ? dayEvents : []);
-          const show = Math.min(dayEvents.length, 2);
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+        {daysGrid.map(({ idx, ds, dayNum, inMonth, today, dayEvents, hasEvents, cellBg, displayEvents, overflowCount }) => {
+          const logoCount = displayEvents.length;
+          const containerClass =
+            logoCount <= 2
+              ? `flex items-center gap-0.5 sm:gap-1 logo-container-${logoCount}`
+              : `grid grid-cols-2 gap-0.5 logo-container-${logoCount}`;
 
           return (
             <div
@@ -142,20 +171,20 @@ const MonthBlock: React.FC<{
             >
               {inMonth && (
                 <>
-                  <span className="cal-day-num">{format(day, "d")}</span>
+                  <span className="cal-day-num">{dayNum}</span>
 
-                  {/* Logos */}
+                  {/* Logos — up to 4 */}
                   {hasEvents && (
-                    <div className={`flex items-center gap-1 ${show > 1 ? "scale-[0.78]" : ""}`}>
-                      {dayEvents.slice(0, 2).map((evt) => (
+                    <div className={containerClass}>
+                      {displayEvents.map((evt) => (
                         <EventLogo key={evt.id} event={evt} />
                       ))}
                     </div>
                   )}
 
-                  {/* Overflow badge */}
-                  {dayEvents.length > 2 && (
-                    <div className="cal-overflow">+{dayEvents.length - 2}</div>
+                  {/* Overflow badge if > 4 */}
+                  {overflowCount > 0 && (
+                    <div className="cal-overflow">+{overflowCount}</div>
                   )}
                 </>
               )}
@@ -165,7 +194,9 @@ const MonthBlock: React.FC<{
       </div>
     </div>
   );
-};
+});
+
+MonthBlock.displayName = "MonthBlock";
 
 /** Full-year grid with all months stacked vertically (2 columns on desktop) */
 export const GridView: React.FC<GridViewProps> = ({
@@ -175,21 +206,28 @@ export const GridView: React.FC<GridViewProps> = ({
   scrollToRef,
 }) => {
   const year = getYear(currentDate);
-  const months = eachMonthOfInterval({
-    start: startOfYear(new Date(year, 0, 1)),
-    end: endOfYear(new Date(year, 0, 1)),
-  });
+
+  const months = useMemo(() => {
+    return eachMonthOfInterval({
+      start: startOfYear(new Date(year, 0, 1)),
+      end: endOfYear(new Date(year, 0, 1)),
+    });
+  }, [year]);
 
   const monthRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Instant scroll on mobile to remove navigation lag, smooth on desktop
   const scrollToMonth = useCallback((dir: "prev" | "next" | "today") => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const scrollBehavior: ScrollBehavior = isMobile ? "auto" : "smooth";
+
     if (dir === "today") {
       const todayEl = document.querySelector(".cal-cell.is-today");
       if (todayEl) {
-        todayEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        todayEl.scrollIntoView({ behavior: scrollBehavior, block: "center" });
       } else {
         const todayIndex = new Date().getMonth();
-        monthRefs.current[todayIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+        monthRefs.current[todayIndex]?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
       }
       return;
     }
@@ -203,7 +241,7 @@ export const GridView: React.FC<GridViewProps> = ({
       if (dist < closestDist) { closestDist = dist; closest = i; }
     });
     const target = Math.max(0, Math.min(months.length - 1, closest + (dir === "next" ? 1 : -1)));
-    monthRefs.current[target]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    monthRefs.current[target]?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
   }, [months.length]);
 
   useEffect(() => {
@@ -230,7 +268,7 @@ export const GridView: React.FC<GridViewProps> = ({
       </div>
 
       {/* 2-column month grid */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
         {months.map((month: Date, i: number) => {
           const monthStr = format(month, "yyyy-MM");
           const monthEvents = allEvents.filter((evt) => {
