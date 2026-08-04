@@ -38,8 +38,8 @@ class AdminClerkErrorBoundary extends Component<
           <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
             Clerk Authentication Notice
           </h2>
-          <p className="text-sm text-[#71717a] max-w-md mb-6 leading-relaxed">
-            Could not initialize Clerk authentication. Please verify your Clerk publishable key in Vercel settings or check your network connection.
+          <p className="text-xs text-red-400 font-mono max-w-lg mb-4 bg-red-950/40 p-3 rounded-xl border border-red-500/30 break-all text-left">
+            {this.state.error?.message || "Unknown initialization error"}
           </p>
 
           <Link
