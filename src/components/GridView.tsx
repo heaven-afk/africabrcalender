@@ -4,7 +4,7 @@ import React, { useRef, useCallback, useEffect } from "react";
 import {
   format, getYear, eachMonthOfInterval, startOfYear, endOfYear,
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, isSameMonth, isToday, isSameDay,
+  eachDayOfInterval, isSameMonth, isToday,
 } from "date-fns";
 import { CalendarEvent } from "@/types/event";
 import { isScrimActiveOnDate, getOrgInitials } from "@/lib/utils";
@@ -17,57 +17,45 @@ interface GridViewProps {
   scrollToRef?: React.MutableRefObject<((dir: "prev" | "next" | "today") => void) | null>;
 }
 
-/** Predefined brand colors for categories when we can't sample the logo */
 const CAT_COLOR: Record<string, string> = {
-  ranking:    "180,100,30",   // amber-ish
-  tournament: "20,130,180",   // cyan-ish
-  scrim:      "20,160,100",   // emerald-ish
+  ranking:    "245,158,11",   // amber-500
+  tournament: "6,182,212",    // cyan-500
+  scrim:      "16,185,129",   // emerald-500
 };
-
-/** Blend two rgb strings "r,g,b" */
-function blendRgb(a: string, b: string, t = 0.5): string {
-  const [ar, ag, ab] = a.split(",").map(Number);
-  const [br, bg, bb] = b.split(",").map(Number);
-  return `${Math.round(ar + (br - ar) * t)},${Math.round(ag + (bg - ag) * t)},${Math.round(ab + (bb - ab) * t)}`;
-}
 
 /** Build CSS background for a day cell based on active events */
 function buildCellBg(dayEvents: CalendarEvent[]): React.CSSProperties {
-  if (dayEvents.length === 0) return { background: "#111113" };
+  if (dayEvents.length === 0) return { background: "rgba(18, 18, 24, 0.45)" };
 
-  // Collect colors for each event
-  const colors = dayEvents.map((e) => CAT_COLOR[e.category] || "100,100,100");
+  const colors = dayEvents.map((e) => CAT_COLOR[e.category] || "150,150,160");
 
   if (dayEvents.length === 1) {
     const c = colors[0];
     return {
-      background: `radial-gradient(circle at 60% 40%, rgba(${c},0.45) 0%, rgba(${c},0.05) 70%), #0e0e10`,
+      background: `radial-gradient(circle at 60% 40%, rgba(${c},0.35) 0%, rgba(${c},0.05) 75%), rgba(18,18,24,0.65)`,
     };
   }
 
-  // Multiple events: blend into gradient
   if (dayEvents.length === 2) {
     const c1 = colors[0], c2 = colors[1];
     return {
-      background: `linear-gradient(135deg, rgba(${c1},0.45) 0%, rgba(${c2},0.45) 100%), #0e0e10`,
+      background: `linear-gradient(135deg, rgba(${c1},0.35) 0%, rgba(${c2},0.35) 100%), rgba(18,18,24,0.65)`,
     };
   }
 
-  // 3+ events
   const stops = colors
     .slice(0, 4)
-    .map((c, i, arr) => `rgba(${c},0.4) ${Math.round((i / (arr.length - 1)) * 100)}%`)
+    .map((c, i, arr) => `rgba(${c},0.35) ${Math.round((i / (arr.length - 1)) * 100)}%`)
     .join(", ");
 
   return {
-    background: `linear-gradient(135deg, ${stops}), #0e0e10`,
+    background: `linear-gradient(135deg, ${stops}), rgba(18,18,24,0.65)`,
   };
 }
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const MONTH_LETTERS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
 
-/** Get all events active on a given day string */
 function getEventsForDay(dateStr: string, events: CalendarEvent[]): CalendarEvent[] {
   return events.filter((evt) => {
     if (evt.category === "scrim") {
@@ -79,7 +67,6 @@ function getEventsForDay(dateStr: string, events: CalendarEvent[]): CalendarEven
   });
 }
 
-/** Single logo or initials circle inside a cell */
 const EventLogo: React.FC<{ event: CalendarEvent }> = ({ event }) => {
   if (event.orgLogoUrl) {
     return (
@@ -113,23 +100,28 @@ const MonthBlock: React.FC<{
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   return (
-    <div ref={monthRef} className="w-full scroll-mt-20">
+    <div ref={monthRef} className="w-full scroll-mt-20 p-4 rounded-2xl liquid-glass-card">
       {/* Month label */}
-      <h3 className="font-display font-bold text-white text-base tracking-wide mb-2">
-        {format(month, "MMMM")}
-      </h3>
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+        <h3 className="font-display font-bold text-white text-base sm:text-lg tracking-wide">
+          {format(month, "MMMM")}
+        </h3>
+        <span className="text-[11px] font-mono font-medium text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+          {format(month, "yyyy")}
+        </span>
+      </div>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 mb-1 gap-px">
+      <div className="grid grid-cols-7 mb-2 gap-1">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="text-center text-[10px] font-semibold text-[#52525b] py-1">
+          <div key={d} className="text-center text-[10px] font-bold text-zinc-500 py-1 uppercase tracking-wider">
             {d}
           </div>
         ))}
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-px">
+      <div className="grid grid-cols-7 gap-1.5">
         {days.map((day: Date, idx: number) => {
           const ds = format(day, "yyyy-MM-dd");
           const inMonth = isSameMonth(day, month);
@@ -146,7 +138,7 @@ const MonthBlock: React.FC<{
               style={inMonth ? cellBg : { background: "transparent" }}
               className={`cal-cell ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
                 !inMonth ? "opacity-0 pointer-events-none" : ""
-              } ${today ? "ring-1 ring-[#e8a33d] shadow-[0_0_12px_rgba(232,163,61,0.3)]" : ""}`}
+              } ${today ? "ring-2 ring-amber-400/80 shadow-[0_0_16px_rgba(245,158,11,0.4)]" : ""}`}
             >
               {inMonth && (
                 <>
@@ -178,7 +170,6 @@ const MonthBlock: React.FC<{
 /** Full-year grid with all months stacked vertically (2 columns on desktop) */
 export const GridView: React.FC<GridViewProps> = ({
   currentDate,
-  events,
   allEvents,
   onDayClick,
   scrollToRef,
@@ -189,7 +180,6 @@ export const GridView: React.FC<GridViewProps> = ({
     end: endOfYear(new Date(year, 0, 1)),
   });
 
-  // Refs to each month section for scrolling
   const monthRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const scrollToMonth = useCallback((dir: "prev" | "next" | "today") => {
@@ -216,7 +206,6 @@ export const GridView: React.FC<GridViewProps> = ({
     monthRefs.current[target]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [months.length]);
 
-  // Expose scroll function to parent via ref
   useEffect(() => {
     if (scrollToRef) scrollToRef.current = scrollToMonth;
   }, [scrollToRef, scrollToMonth]);
@@ -224,15 +213,15 @@ export const GridView: React.FC<GridViewProps> = ({
   return (
     <div className="flex gap-4">
       {/* Month letter sidebar */}
-      <div className="hidden xl:flex flex-col w-6 pt-2 shrink-0 gap-1">
+      <div className="hidden xl:flex flex-col w-7 pt-2 shrink-0 gap-1 liquid-glass p-1 rounded-xl h-fit sticky top-20">
         {MONTH_LETTERS.map((m, i) => (
           <button
             key={i}
             onClick={() => monthRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className={`h-5 flex items-center justify-center text-[10px] font-bold leading-none transition-colors rounded ${
+            className={`h-6 flex items-center justify-center text-[10px] font-bold leading-none transition-all rounded-lg ${
               i === currentDate.getMonth()
-                ? "text-[#e8a33d]"
-                : "text-[#3f3f46] hover:text-[#a1a1aa]"
+                ? "text-amber-400 bg-amber-500/10 border border-amber-500/30"
+                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
             }`}
           >
             {m}
@@ -241,10 +230,9 @@ export const GridView: React.FC<GridViewProps> = ({
       </div>
 
       {/* 2-column month grid */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
         {months.map((month: Date, i: number) => {
           const monthStr = format(month, "yyyy-MM");
-          // Get events for this specific month
           const monthEvents = allEvents.filter((evt) => {
             if (evt.category === "scrim") {
               const mStart = format(startOfMonth(month), "yyyy-MM-dd");

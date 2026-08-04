@@ -1,6 +1,6 @@
 import { parsePublishableKey } from "@clerk/shared/keys";
 
-const DEFAULT_CLERK_KEY = "pk_test_dG91Y2hpbmctbGlvbmVzcy0xNi5jbGVyay5hY2NvdW50cy5kZXY$";
+const DEFAULT_CLERK_KEY = "pk_test_dG91Y2hpbmctbGlvbmVzcy0xNi5jbGVyay5hY2NvdW50cy5kZXYk";
 
 /**
  * Return trimmed Clerk Publishable Key string directly without mutation.

@@ -34,8 +34,8 @@ function ClerkHeaderAuth() {
 }
 
 /* ─── Input / label atoms ────────────────────────────────────────────────── */
-const fieldCls = "w-full bg-[#0e0e10] border border-[#27272a] hover:border-[#3f3f46] focus:border-[#e8a33d] rounded-lg px-3 py-2 text-sm text-white outline-none transition-colors placeholder-[#3f3f46]";
-const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-[#52525b] mb-1.5";
+const fieldCls = "w-full liquid-glass-input rounded-xl px-3.5 py-2 text-sm text-white outline-none placeholder-zinc-500 transition-all";
+const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1.5";
 
 /* ─── Category colours ───────────────────────────────────────────────────── */
 const CAT_META: Record<EventCategory, { label: string; ring: string; bg: string; text: string }> = {
@@ -515,7 +515,7 @@ export default function AdminPage() {
               </p>
             </div>
 
-            <div className="bg-[#141417] p-4 rounded-2xl border border-[#27272a] shadow-2xl">
+            <div className="liquid-glass-card p-6 rounded-3xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
               <SignIn
                 routing="hash"
                 afterSignInUrl="/admin"

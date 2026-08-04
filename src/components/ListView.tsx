@@ -2,7 +2,7 @@
 
 import React from "react";
 import { format, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
-import { Tv, ExternalLink, MessageSquare, Clock, Calendar, ChevronRight } from "lucide-react";
+import { Tv, MessageSquare, Clock, Calendar, ChevronRight } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 import { CategoryPill } from "./CategoryPill";
 import { OrgLogo } from "./OrgLogo";
@@ -34,18 +34,18 @@ function formatDateRange(evt: CalendarEvent): string {
 }
 
 const catLeft = (category: string) => {
-  if (category === "ranking") return "bg-amber-400";
-  if (category === "tournament") return "bg-cyan-400";
-  return "bg-emerald-400";
+  if (category === "ranking") return "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.6)]";
+  if (category === "tournament") return "bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.6)]";
+  return "bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]";
 };
 
 export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => {
   if (events.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-center rounded-2xl bg-surface/30 border border-surface-border">
-        <Calendar className="w-10 h-10 text-neutral-700 mb-3" />
-        <h3 className="font-display font-bold text-base text-neutral-500 tracking-wider">NO EVENTS SCHEDULED</h3>
-        <p className="text-xs text-neutral-600 max-w-sm mt-1">
+      <div className="flex flex-col items-center justify-center p-16 text-center rounded-2xl liquid-glass border border-white/10">
+        <Calendar className="w-10 h-10 text-zinc-600 mb-3" />
+        <h3 className="font-display font-bold text-base text-zinc-400 tracking-wider">NO EVENTS SCHEDULED</h3>
+        <p className="text-xs text-zinc-500 max-w-sm mt-1">
           No matching events found for this period. Try adjusting the filters or navigate to a different month.
         </p>
       </div>
@@ -53,7 +53,7 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       {events.map((evt) => {
         const status = getStatus(evt);
         const isScrim = evt.category === "scrim";
@@ -62,15 +62,15 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
           <div
             key={evt.id}
             onClick={() => onSelectEvent(evt)}
-            className="relative rounded-xl border border-surface-border bg-[#141417] hover:border-gold-500/30 hover:bg-[#17171C] transition-all cursor-pointer group overflow-hidden"
+            className="relative rounded-2xl liquid-glass-card hover:border-amber-500/40 transition-all cursor-pointer group overflow-hidden"
           >
             {/* Category left stripe */}
             <div className={`absolute left-0 top-0 bottom-0 w-1 ${catLeft(evt.category)}`} />
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 pl-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4.5 pl-6">
 
               {/* Left: Logo + info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-3.5 flex-1 min-w-0">
                 <OrgLogo orgName={evt.orgName} logoUrl={evt.orgLogoUrl} size="md" />
 
                 <div className="min-w-0">
@@ -78,17 +78,17 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                     <CategoryPill category={evt.category} size="sm" />
                     {evt.stage && (
-                      <span className="text-[10px] font-bold text-neutral-400 bg-surface-elevated border border-surface-border px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-zinc-300 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-md">
                         {evt.stage}
                       </span>
                     )}
                     {evt.region && (
-                      <span className="text-[10px] font-bold text-neutral-500 bg-surface-elevated border border-surface-border px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-zinc-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-md">
                         {evt.region}
                       </span>
                     )}
                     {status === "live" && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md shadow-[0_0_10px_rgba(16,185,129,0.15)]">
                         <span className="dot-live" />
                         LIVE
                       </span>
@@ -96,14 +96,14 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-display font-bold text-white text-base sm:text-lg leading-snug group-hover:text-gold-300 transition-colors truncate">
+                  <h3 className="font-display font-bold text-white text-base sm:text-lg leading-snug group-hover:text-amber-300 transition-colors truncate">
                     {evt.name}
                   </h3>
 
                   {/* Sub info */}
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    <span className="text-neutral-400">{evt.orgName}</span>
-                    <span className="mx-1.5 text-neutral-700">·</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Hosted by <strong className="text-zinc-200">{evt.orgName}</strong>
+                    <span className="mx-2 text-zinc-600">·</span>
                     <span>{formatDateRange(evt)}</span>
                   </p>
                 </div>
@@ -112,8 +112,8 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
               {/* Right: schedule + quick links */}
               <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 sm:min-w-[140px]">
                 {isScrim && evt.recurrence && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
-                    <Clock className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
                     <span>
                       {evt.recurrence.daysOfWeek.map((d) => daysMap[d]).join(" ")} {evt.recurrence.startTime}–{evt.recurrence.endTime}
                     </span>
@@ -127,10 +127,10 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-neutral-400 bg-surface-elevated border border-surface-border hover:text-gold-400 hover:border-gold-500/30 transition-all"
-                      title="Watch stream"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-zinc-300 bg-white/[0.04] border border-white/10 hover:text-amber-400 hover:border-amber-500/30 transition-all"
+                      title="Watch Stream"
                     >
-                      <Tv className="w-3 h-3" />
+                      <Tv className="w-3.5 h-3.5 text-amber-400" />
                       <span className="hidden sm:inline">Stream</span>
                     </a>
                   )}
@@ -141,14 +141,14 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 rounded-lg text-neutral-600 bg-surface-elevated border border-surface-border hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
+                      className="p-2 rounded-xl text-zinc-400 bg-white/[0.04] border border-white/10 hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
                       title="Discord"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
                     </a>
                   )}
 
-                  <div className="p-1.5 rounded-lg text-neutral-700 bg-surface-elevated border border-surface-border group-hover:text-neutral-400 transition-colors">
+                  <div className="p-2 rounded-xl text-zinc-500 bg-white/[0.04] border border-white/10 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-all">
                     <ChevronRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
