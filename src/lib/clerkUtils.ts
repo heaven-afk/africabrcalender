@@ -1,20 +1,38 @@
 import { parsePublishableKey } from "@clerk/shared/keys";
 
-const DEFAULT_CLERK_KEY = "pk_test_dG91Y2hpbmctbGlvbmVzcy0xNi5jbGVyay5hY2NvdW50cy5kZXY$";
+const DEFAULT_CLERK_KEY = "pk_test_dG91Y2hpbmctbGlvbmVzcy0xNi5jbGVyay5hY2NvdW50cy5kZXY=$";
 
 /**
- * Sanitize a Clerk Publishable Key string for Clerk SDK v5.
- * Ensures the publishable key retains its required '$' suffix.
+ * Sanitize a Clerk Publishable Key string.
+ * Fixes unpadded Base64 strings to prevent 'atob' Window decoding exceptions.
  */
 export function sanitizeClerkKey(key: string | undefined): string {
   if (!key || typeof key !== "string" || key.trim().length === 0) {
     return DEFAULT_CLERK_KEY;
   }
   let k = key.trim().replace(/^["']|["']$/g, "").replace(/[\r\n\t]/g, "");
-  if ((k.startsWith("pk_test_") || k.startsWith("pk_live_")) && !k.endsWith("$")) {
-    k = `${k}$`;
+
+  if (!k.startsWith("pk_test_") && !k.startsWith("pk_live_")) {
+    return DEFAULT_CLERK_KEY;
   }
-  return k;
+
+  // Remove trailing '$' for payload inspection
+  if (k.endsWith("$")) {
+    k = k.slice(0, -1);
+  }
+
+  // Add missing Base64 '=' padding if needed
+  const parts = k.split("_");
+  if (parts.length >= 3) {
+    let payload = parts.slice(2).join("_");
+    const mod = payload.length % 4;
+    if (mod > 0) {
+      payload += "=".repeat(4 - mod);
+    }
+    k = `${parts[0]}_${parts[1]}_${payload}`;
+  }
+
+  return `${k}$`;
 }
 
 /**
