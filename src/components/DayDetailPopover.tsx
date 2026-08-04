@@ -30,13 +30,15 @@ export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="day-popover-card animate-scaleIn"
+        className="day-popover-card max-sm:rounded-b-none max-sm:rounded-t-3xl max-sm:max-w-full max-sm:w-full animate-slideUp sm:animate-scaleIn max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile handle indicator */}
+        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-2 sm:hidden shrink-0" />
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
           <div className="flex items-center gap-2">

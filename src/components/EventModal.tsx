@@ -37,11 +37,11 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xl animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-[#101016]/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85)] overflow-hidden animate-scaleIn"
+        className="relative w-full max-w-lg bg-[#101016]/95 backdrop-blur-2xl border border-white/10 max-sm:rounded-b-none max-sm:rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85)] overflow-hidden animate-slideUp sm:animate-scaleIn max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Category color header stripe */}

@@ -34,19 +34,19 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
   filteredCount,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 p-2 rounded-2xl liquid-glass border border-white/10 shadow-xl">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 p-2.5 sm:p-2 rounded-2xl liquid-glass border border-white/10 shadow-xl">
       
       {/* Filters & Search row */}
-      <div className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-none pb-0.5 max-w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-2 flex-1 max-w-full">
         {/* Search input */}
-        <div className="relative shrink-0 sm:shrink">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+        <div className="relative w-full sm:w-56 shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-amber-400/70" />
           <input
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search events, organizers…"
-            className="w-40 sm:w-56 liquid-glass-input text-xs text-white placeholder-zinc-500 rounded-xl pl-9 pr-8 py-2 outline-none"
+            className="w-full liquid-glass-input text-xs text-white placeholder-zinc-500 rounded-xl pl-9 pr-8 py-2 outline-none"
           />
           {search && (
             <button

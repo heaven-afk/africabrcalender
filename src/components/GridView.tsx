@@ -178,9 +178,11 @@ const MonthBlock: React.FC<{
               key={idx}
               onClick={() => hasEvents && inMonth && onDayClick(ds, dayEvents)}
               style={inMonth ? cellBg : { background: "transparent" }}
-              className={`cal-cell ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
+              className={`cal-cell touch-manipulation ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
                 !inMonth ? "opacity-0 pointer-events-none" : ""
-              } ${today ? "ring-2 ring-amber-400/80 shadow-[0_0_16px_rgba(245,158,11,0.4)]" : ""}`}
+              } ${hasEvents && inMonth ? "active:scale-95 active:border-amber-400/80 cursor-pointer" : ""} ${
+                today ? "ring-2 ring-amber-400/80 shadow-[0_0_16px_rgba(245,158,11,0.4)]" : ""
+              }`}
             >
               {inMonth && (
                 <>
