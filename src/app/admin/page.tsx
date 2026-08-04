@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
+import { LogoUploadInput } from "@/components/LogoUploadInput";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
@@ -549,10 +550,11 @@ function AdminDashboard() {
                   <label className={labelCls}>Organization Name *</label>
                   <input type="text" required value={formOrgName} onChange={(e) => setFormOrgName(e.target.value)} placeholder="e.g. African Battle Royale Community" className={fieldCls} />
                 </div>
-                <div>
-                  <label className={labelCls}>Org Logo URL</label>
-                  <input type="url" value={formOrgLogoUrl} onChange={(e) => setFormOrgLogoUrl(e.target.value)} placeholder="https://i.ibb.co/..." className={fieldCls} />
-                </div>
+                <LogoUploadInput
+                  label="Org Logo (Upload or URL)"
+                  value={formOrgLogoUrl}
+                  onChange={setFormOrgLogoUrl}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

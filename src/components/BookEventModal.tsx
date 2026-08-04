@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Calendar, Mail, Globe, MessageSquare, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { EventCategory, StreamLink } from "@/types/event";
+import { LogoUploadInput } from "./LogoUploadInput";
 
 interface BookEventModalProps {
   open: boolean;
@@ -232,16 +233,11 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Org Logo Image URL</label>
-                <input
-                  type="url"
-                  value={orgLogoUrl}
-                  onChange={(e) => setOrgLogoUrl(e.target.value)}
-                  placeholder="https://i.imgur.com/..."
-                  className={fieldCls}
-                />
-              </div>
+              <LogoUploadInput
+                label="Organization Logo"
+                value={orgLogoUrl}
+                onChange={setOrgLogoUrl}
+              />
               <div>
                 <label className={labelCls}>Stage / Qualifier Info</label>
                 <input
