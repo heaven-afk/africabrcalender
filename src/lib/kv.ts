@@ -1,9 +1,17 @@
 import { kv } from "@vercel/kv";
 import { CalendarEvent } from "@/types/event";
 import { getOverlappingMonths } from "./utils";
+import {
+  isSupabaseConfigured,
+  getSupabaseEvents,
+  getSupabaseEventById,
+  saveSupabaseEvent,
+  deleteSupabaseEvent,
+} from "./supabase";
 
 // Re-export pure utilities so existing imports from @/lib/kv still work
 export { getOverlappingMonths, isScrimActiveOnDate, getOrgInitials } from "./utils";
+export { isSupabaseConfigured };
 
 // ─── KV Configuration ───────────────────────────────────────────────────────
 export function isKvConfigured(): boolean {
@@ -16,9 +24,6 @@ export function isKvConfigured(): boolean {
 const kvClient = kv as any;
 
 // ─── Server-only file store (lazy-loaded only in API routes) ───────────────
-// We import synchronously at module level but ONLY from API route files.
-// Next.js API routes run in Node.js runtime so `fs` is available.
-// Client components must NOT import from kv.ts for CRUD ops — use the API.
 import { readJsonStore, writeJsonStore } from "./fileStore";
 
 /**
@@ -27,6 +32,10 @@ import { readJsonStore, writeJsonStore } from "./fileStore";
  */
 export async function getEvents(month?: string): Promise<CalendarEvent[]> {
   try {
+    if (isSupabaseConfigured()) {
+      return await getSupabaseEvents(month);
+    }
+
     if (isKvConfigured()) {
       let eventIds = (await kvClient.smembers("events:all")) as string[];
       
@@ -90,6 +99,10 @@ export async function getEvents(month?: string): Promise<CalendarEvent[]> {
  */
 export async function getEventById(id: string): Promise<CalendarEvent | null> {
   try {
+    if (isSupabaseConfigured()) {
+      return await getSupabaseEventById(id);
+    }
+
     if (isKvConfigured()) {
       const event = (await kvClient.get(`event:${id}`)) as CalendarEvent | null;
       return event;
@@ -107,6 +120,11 @@ export async function getEventById(id: string): Promise<CalendarEvent | null> {
  * Save or update an event — server-side only
  */
 export async function saveEvent(event: CalendarEvent): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await saveSupabaseEvent(event);
+    return;
+  }
+
   const months = getOverlappingMonths(event.startDate, event.endDate);
 
   if (isKvConfigured()) {
@@ -126,6 +144,11 @@ export async function saveEvent(event: CalendarEvent): Promise<void> {
  * Delete an event — server-side only
  */
 export async function deleteEvent(id: string): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await deleteSupabaseEvent(id);
+    return;
+  }
+
   if (isKvConfigured()) {
     const existing = await getEventById(id);
     if (existing) {

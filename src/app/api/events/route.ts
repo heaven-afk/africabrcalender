@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEvents, isKvConfigured } from "@/lib/kv";
+import { getEvents, isKvConfigured, isSupabaseConfigured } from "@/lib/kv";
 import { EventCategory } from "@/types/event";
 
-// Never cache this route — always read fresh data from file/KV
+// Never cache this route — always read fresh data from file/KV/Supabase
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      storage: isKvConfigured() ? "Upstash / Vercel KV" : "Local / Temporary Memory",
+      storage: isSupabaseConfigured()
+        ? "Supabase PostgreSQL"
+        : isKvConfigured()
+        ? "Upstash / Vercel KV"
+        : "Local / Temporary Memory",
+      isSupabaseActive: isSupabaseConfigured(),
       isKvActive: isKvConfigured(),
       count: events.length,
       month: month || "all",
