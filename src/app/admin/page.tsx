@@ -76,10 +76,10 @@ function AdminContent() {
           <ShieldAlert className="w-8 h-8 text-red-400" />
         </div>
         <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
-          Access Restricted
+          Administrator Access Restricted
         </h2>
-        <p className="text-sm text-[#71717a] max-w-md mb-6 leading-relaxed">
-          Your account (<span className="text-white font-semibold">{userEmail || "Signed In"}</span>) is not listed on <code className="text-[#e8a33d] bg-black/40 px-1.5 py-0.5 rounded">NEXT_PUBLIC_ADMIN_EMAILS</code>.
+        <p className="text-sm text-zinc-400 max-w-md mb-6 leading-relaxed">
+          The account <span className="text-white font-semibold">{userEmail || "Signed In"}</span> does not have administrative privileges. If you are an organizer or moderator needing access, please request authorization from the admin team.
         </p>
         <div className="flex items-center gap-3">
           <Link
@@ -118,6 +118,7 @@ function AdminDashboard() {
   /* Form fields */
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState<EventCategory>("tournament");
+  const [formGame, setFormGame] = useState("");
   const [formStage, setFormStage] = useState("");
   const [formStartDate, setFormStartDate] = useState("");
   const [formEndDate, setFormEndDate] = useState("");
@@ -205,7 +206,7 @@ function AdminDashboard() {
   /* ─── Modal helpers ─────────────────────────────────────────────────────── */
   const resetForm = () => {
     const today = new Date().toISOString().slice(0, 10);
-    setFormName(""); setFormCategory("tournament"); setFormStage("");
+    setFormName(""); setFormCategory("tournament"); setFormGame(""); setFormStage("");
     setFormStartDate(today); setFormEndDate(today); setFormOrgName("");
     setFormOrgLogoUrl(""); setFormRegion(""); setFormDaysOfWeek([1,2,3,4,5]);
     setFormStartTime("19:00"); setFormEndTime("21:00"); setFormTimezone("Africa/Lagos");
@@ -223,6 +224,7 @@ function AdminDashboard() {
     setEditingEvent(evt);
     setFormName(evt.name || "");
     setFormCategory(evt.category || "tournament");
+    setFormGame(evt.game || "");
     setFormStage(evt.stage || "");
     setFormStartDate(evt.startDate || "");
     setFormEndDate(evt.endDate || "");
@@ -262,6 +264,7 @@ function AdminDashboard() {
         ...(editingEvent ? { id: editingEvent.id } : {}),
         name: formName.trim(),
         category: formCategory,
+        game: formGame.trim() || null,
         stage: formStage.trim() || null,
         startDate: formStartDate,
         endDate: formEndDate,
@@ -520,10 +523,14 @@ function AdminDashboard() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Event Name *</label>
-                  <input type="text" required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Season 38 / Nova Scrims" className={fieldCls} />
+                  <input type="text" required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Season 38" className={fieldCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Game Title</label>
+                  <input type="text" value={formGame} onChange={(e) => setFormGame(e.target.value)} placeholder="e.g. Apex Legends, Free Fire" className={fieldCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Category *</label>

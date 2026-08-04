@@ -21,6 +21,7 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
   const today = new Date().toISOString().slice(0, 10);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<EventCategory>("tournament");
+  const [game, setGame] = useState("");
   const [stage, setStage] = useState("");
   const [orgName, setOrgName] = useState("");
   const [orgLogoUrl, setOrgLogoUrl] = useState("");
@@ -48,6 +49,7 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
       const payload = {
         name: name.trim(),
         category,
+        game: game.trim() || undefined,
         stage: stage.trim() || undefined,
         orgName: orgName.trim(),
         orgLogoUrl: orgLogoUrl.trim() || undefined,
@@ -133,7 +135,7 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelCls}>Event Name *</label>
                 <input
@@ -141,7 +143,17 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Sub-Saharan Championship 2026"
+                  placeholder="e.g. Sub-Saharan Championship"
+                  className={fieldCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Game Title *</label>
+                <input
+                  type="text"
+                  value={game}
+                  onChange={(e) => setGame(e.target.value)}
+                  placeholder="e.g. Apex Legends, Free Fire, PUBG"
                   className={fieldCls}
                 />
               </div>

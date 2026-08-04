@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Clock, Radio, ChevronRight, Zap } from "lucide-react";
+import { Clock, Radio, ChevronRight, Zap, Gamepad2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 import { OrgLogo } from "./OrgLogo";
 import { CategoryPill } from "./CategoryPill";
@@ -162,6 +162,13 @@ export const NextEventCountdown: React.FC<NextEventCountdownProps> = ({ events, 
                   )}
 
                   <CategoryPill category={nextTarget.event.category} size="sm" />
+
+                  {nextTarget.event.game && (
+                    <span className="inline-flex items-center gap-1 text-[9.5px] font-extrabold uppercase tracking-wider text-purple-300 bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 rounded-md">
+                      <Gamepad2 className="w-2.5 h-2.5 text-purple-400" />
+                      {nextTarget.event.game}
+                    </span>
+                  )}
                 </div>
 
                 <h4 className="font-display font-bold text-white text-sm sm:text-base tracking-wide group-hover:text-amber-300 transition-colors truncate">

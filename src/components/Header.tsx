@@ -56,7 +56,26 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="liquid-glass-header w-full border-b border-white/[0.06] backdrop-blur-2xl">
         <div className="flex items-center justify-between px-3 sm:px-6 h-12 max-w-[1400px] mx-auto w-full gap-2">
           
-          {/* Layer 1 Left: Action buttons (Search, Share, How To, Book Event) */}
+          {/* Layer 1 Left: Name & Logo (Africa BR Calendar) */}
+          <div
+            className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform shrink-0"
+            onClick={onToday}
+            title="Return to Today"
+          >
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            </div>
+            <div className="flex flex-col items-start leading-none">
+              <span className="font-display font-bold text-white text-[13px] sm:text-[14px] tracking-[0.14em] uppercase">
+                Africa
+              </span>
+              <span className="font-display font-semibold text-amber-400 text-[8.5px] sm:text-[9px] tracking-[0.22em] uppercase mt-0.5">
+                BR Calendar
+              </span>
+            </div>
+          </div>
+
+          {/* Layer 1 Right: Action buttons (Book Event, Search, Share, How To) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 touch-manipulation">
             <button
               onClick={onBookEvent}
@@ -104,25 +123,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <HelpCircle className="w-3.5 h-3.5 text-zinc-300 hover:text-amber-400" />
             </button>
-          </div>
-
-          {/* Layer 1 Right: Name (Africa BR Calendar) */}
-          <div
-            className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform shrink-0"
-            onClick={onToday}
-            title="Return to Today"
-          >
-            <div className="flex flex-col items-end leading-none">
-              <span className="font-display font-bold text-white text-[13px] sm:text-[14px] tracking-[0.14em] uppercase">
-                Africa
-              </span>
-              <span className="font-display font-semibold text-amber-400 text-[8.5px] sm:text-[9px] tracking-[0.22em] uppercase mt-0.5">
-                BR Calendar
-              </span>
-            </div>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            </div>
           </div>
 
         </div>

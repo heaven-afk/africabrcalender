@@ -23,6 +23,7 @@ export interface CalendarEvent {
   id: string;
   name: string;
   category: EventCategory;
+  game?: string | null;
   stage: string | null;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD

@@ -101,6 +101,7 @@ export default function HomePage() {
         return (
           evt.name.toLowerCase().includes(q) ||
           evt.orgName.toLowerCase().includes(q) ||
+          (evt.game || "").toLowerCase().includes(q) ||
           (evt.stage || "").toLowerCase().includes(q)
         );
       }

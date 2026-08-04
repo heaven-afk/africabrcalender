@@ -9,6 +9,7 @@ import {
   MessageSquare,
   ExternalLink,
   Globe,
+  Gamepad2,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { CalendarEvent } from "@/types/event";
@@ -76,6 +77,12 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
           <div className="flex-1 min-w-0 pt-1">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <CategoryPill category={event.category} size="sm" />
+              {event.game && (
+                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/25">
+                  <Gamepad2 className="w-3 h-3 text-purple-400" />
+                  {event.game}
+                </span>
+              )}
               {event.region && (
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 border border-white/10">
                   {event.region}
