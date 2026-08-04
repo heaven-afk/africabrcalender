@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEvents } from "@/lib/kv";
+import { getEvents, isKvConfigured } from "@/lib/kv";
 import { EventCategory } from "@/types/event";
 
 // Never cache this route — always read fresh data from file/KV
@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      storage: isKvConfigured() ? "Upstash / Vercel KV" : "Local / Temporary Memory",
+      isKvActive: isKvConfigured(),
       count: events.length,
       month: month || "all",
       data: events,
