@@ -7,12 +7,9 @@ export { getOverlappingMonths, isScrimActiveOnDate, getOrgInitials } from "./uti
 
 // ─── KV Configuration ───────────────────────────────────────────────────────
 function isKvConfigured(): boolean {
-  return (
-    process.env.KV_REST_API_URL !== undefined &&
-    process.env.KV_REST_API_URL.length > 0 &&
-    process.env.KV_REST_API_TOKEN !== undefined &&
-    process.env.KV_REST_API_TOKEN.length > 0
-  );
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  return Boolean(url && url.length > 0 && token && token.length > 0);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
