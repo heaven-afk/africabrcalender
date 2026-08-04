@@ -30,24 +30,24 @@ export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="day-popover-card max-sm:rounded-b-none max-sm:rounded-t-3xl max-sm:max-w-full max-sm:w-full animate-slideUp sm:animate-scaleIn max-h-[85vh] flex flex-col"
+        className="day-popover-card max-sm:rounded-b-none max-sm:rounded-t-[28px] max-sm:max-w-full max-sm:w-full animate-slideUp sm:animate-scaleIn max-h-[85vh] flex flex-col border border-white/[0.08] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile handle indicator */}
-        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-2 sm:hidden shrink-0" />
+        <div className="w-10 h-1 bg-white/25 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5 text-[#e8a33d]" />
+            <Calendar className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-sm font-semibold text-white">{dayLabel}</span>
-            <span className="text-xs text-[#52525b]">· {events.length}</span>
+            <span className="text-xs text-zinc-500">· {events.length} event{events.length !== 1 ? "s" : ""}</span>
           </div>
-          <button onClick={onClose} className="toolbar-btn w-6 h-6">
-            <X className="w-3.5 h-3.5" />
+          <button onClick={onClose} className="toolbar-btn w-7 h-7 rounded-full">
+            <X className="w-3.5 h-3.5 text-zinc-400" />
           </button>
         </div>
 

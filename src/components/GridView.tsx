@@ -144,21 +144,21 @@ const MonthBlock: React.FC<{
   }, [days, month, events]);
 
   return (
-    <div ref={monthRef} className="w-full scroll-mt-20 p-3.5 sm:p-4 rounded-2xl liquid-glass-card">
+    <div ref={monthRef} className="w-full scroll-mt-20 p-2.5 sm:p-4 rounded-2xl liquid-glass-card border border-white/[0.05]">
       {/* Month label */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
-        <h3 className="font-display font-bold text-white text-base sm:text-lg tracking-wide">
+      <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-white/[0.06]">
+        <h3 className="font-display font-bold text-white text-sm sm:text-base tracking-wide">
           {format(month, "MMMM")}
         </h3>
-        <span className="text-[11px] font-mono font-medium text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+        <span className="text-[10px] font-mono font-medium text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
           {format(month, "yyyy")}
         </span>
       </div>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 mb-2 gap-1">
+      <div className="grid grid-cols-7 mb-1.5 gap-1">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="text-center text-[10px] font-bold text-zinc-500 py-1 uppercase tracking-wider">
+          <div key={d} className="text-center text-[9.5px] font-bold text-zinc-500 py-0.5 uppercase tracking-wider">
             {d}
           </div>
         ))}
@@ -170,7 +170,7 @@ const MonthBlock: React.FC<{
           const logoCount = displayEvents.length;
           const containerClass =
             logoCount <= 2
-              ? `flex items-center gap-0.5 sm:gap-1 logo-container-${logoCount}`
+              ? `flex items-center gap-0.5 logo-container-${logoCount}`
               : `grid grid-cols-2 gap-0.5 logo-container-${logoCount}`;
 
           return (
@@ -180,8 +180,8 @@ const MonthBlock: React.FC<{
               style={inMonth ? cellBg : { background: "transparent" }}
               className={`cal-cell touch-manipulation ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
                 !inMonth ? "opacity-0 pointer-events-none" : ""
-              } ${hasEvents && inMonth ? "active:scale-95 active:border-amber-400/80 cursor-pointer" : ""} ${
-                today ? "ring-2 ring-amber-400/80 shadow-[0_0_16px_rgba(245,158,11,0.4)]" : ""
+              } ${hasEvents && inMonth ? "active:scale-95 cursor-pointer hover:border-amber-400/60" : ""} ${
+                today ? "ring-1.5 ring-amber-400/90 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : ""
               }`}
             >
               {inMonth && (

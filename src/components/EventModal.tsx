@@ -37,28 +37,31 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xl animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-xl animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-[#101016]/95 backdrop-blur-2xl border border-white/10 max-sm:rounded-b-none max-sm:rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85)] overflow-hidden animate-slideUp sm:animate-scaleIn max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-lg bg-[#0e0e14]/95 backdrop-blur-2xl border border-white/[0.08] max-sm:rounded-b-none max-sm:rounded-t-[28px] sm:rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.9)] overflow-hidden animate-slideUp sm:animate-scaleIn max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile handle indicator */}
+        <div className="w-10 h-1 bg-white/25 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
         {/* Category color header stripe */}
         <div
           className={`h-1.5 w-full ${
             event.category === "ranking"
-              ? "bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]"
+              ? "bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.6)]"
               : event.category === "tournament"
-              ? "bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)]"
-              : "bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)]"
+              ? "bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+              : "bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.6)]"
           }`}
         />
 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+          className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
         >
           <X className="w-4 h-4" />
         </button>
