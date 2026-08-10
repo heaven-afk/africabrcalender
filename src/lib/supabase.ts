@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { CalendarEvent } from "@/types/event";
-import { readJsonStore } from "./fileStore";
 import { getOverlappingMonths } from "./utils";
+import { normalizeGame, normalizeRegion } from "./eventCatalog";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey =
@@ -32,13 +32,16 @@ export function mapRowToEvent(row: any): CalendarEvent {
     id: row.id,
     name: row.name,
     category: row.category,
-    game: row.game || null,
+    game: normalizeGame(row.game),
+    description: row.location?.note || null,
+    startTime: row.location?.startTime || row.recurrence?.startTime || null,
+    endTime: row.location?.endTime || row.recurrence?.endTime || null,
     stage: row.stage || null,
     startDate: row.start_date,
     endDate: row.end_date,
     orgName: row.org_name,
     orgLogoUrl: row.org_logo_url || null,
-    region: row.region || null,
+    region: normalizeRegion(row.region),
     streamLinks: Array.isArray(row.stream_links) ? row.stream_links : [],
     location: row.location || {},
     recurrence: row.recurrence || null,
@@ -56,15 +59,15 @@ export function mapEventToRow(evt: CalendarEvent): any {
     id: evt.id,
     name: evt.name,
     category: evt.category,
-    game: evt.game || null,
+    game: normalizeGame(evt.game),
     stage: evt.stage || null,
     start_date: evt.startDate,
     end_date: evt.endDate,
     org_name: evt.orgName,
     org_logo_url: evt.orgLogoUrl || null,
-    region: evt.region || null,
+    region: normalizeRegion(evt.region),
     stream_links: evt.streamLinks || [],
-    location: evt.location || {},
+    location: { ...(evt.location || {}), ...(evt.description ? { note: evt.description } : {}), ...(evt.startTime ? { startTime: evt.startTime } : {}), ...(evt.endTime ? { endTime: evt.endTime } : {}) },
     recurrence: evt.recurrence || null,
     status: evt.status || "approved",
     submitter_email: evt.submitterEmail || null,
@@ -87,27 +90,7 @@ export async function getSupabaseEvents(month?: string): Promise<CalendarEvent[]
 
     if (error) {
       console.error("Supabase getEvents error:", error);
-      return [];
-    }
-
-    // Auto-migrate from data/events.json if Supabase database is completely empty
-    if (!data || data.length === 0) {
-      console.log("[SUPABASE] Database is empty. Running automatic migration from data/events.json...");
-      const store = readJsonStore();
-      const initialEvents = Array.from(store.values());
-
-      if (initialEvents.length > 0) {
-        const rowsToInsert = initialEvents.map(mapEventToRow);
-        const { error: insertError } = await client.from("events").upsert(rowsToInsert, { onConflict: "id" });
-        if (!insertError) {
-          console.log(`[SUPABASE] Successfully auto-migrated ${initialEvents.length} events into Supabase!`);
-          return initialEvents.sort(
-            (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-          );
-        } else {
-          console.error("Supabase auto-migration insert error:", insertError);
-        }
-      }
+      throw error;
     }
 
     let events = (data || []).map(mapRowToEvent);
@@ -124,7 +107,7 @@ export async function getSupabaseEvents(month?: string): Promise<CalendarEvent[]
     );
   } catch (err) {
     console.error("Error querying Supabase events:", err);
-    return [];
+    throw err;
   }
 }
 
@@ -135,11 +118,12 @@ export async function getSupabaseEventById(id: string): Promise<CalendarEvent | 
 
   try {
     const { data, error } = await client.from("events").select("*").eq("id", id).maybeSingle();
-    if (error || !data) return null;
+    if (error) throw error;
+    if (!data) return null;
     return mapRowToEvent(data);
   } catch (err) {
     console.error(`Error fetching Supabase event ${id}:`, err);
-    return null;
+    throw err;
   }
 }
 
@@ -153,9 +137,11 @@ export async function saveSupabaseEvent(event: CalendarEvent): Promise<void> {
     const { error } = await client.from("events").upsert(row, { onConflict: "id" });
     if (error) {
       console.error("Error upserting Supabase event:", error);
+      throw error;
     }
   } catch (err) {
     console.error("Exception upserting Supabase event:", err);
+    throw err;
   }
 }
 
@@ -168,8 +154,10 @@ export async function deleteSupabaseEvent(id: string): Promise<void> {
     const { error } = await client.from("events").delete().eq("id", id);
     if (error) {
       console.error(`Error deleting Supabase event ${id}:`, error);
+      throw error;
     }
   } catch (err) {
     console.error(`Exception deleting Supabase event ${id}:`, err);
+    throw err;
   }
 }

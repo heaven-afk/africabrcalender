@@ -19,7 +19,7 @@ export const OrgLogo: React.FC<OrgLogoProps> = ({ orgName, logoUrl, size = "md" 
 
   if (logoUrl) {
     return (
-      <div className={`${outer} rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center p-0.5 shrink-0`}>
+      <div className={`${outer} rounded-lg overflow-hidden bg-[#050606] border border-[#222624] flex items-center justify-center p-1 shrink-0`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoUrl}
@@ -38,7 +38,7 @@ export const OrgLogo: React.FC<OrgLogoProps> = ({ orgName, logoUrl, size = "md" 
 
   return (
     <div
-      className={`${outer} rounded-xl bg-surface-elevated border border-surface-border flex items-center justify-center font-bold text-neutral-400 shrink-0 ${text}`}
+      className={`${outer} rounded-lg bg-[#111412] border border-[#373d39] flex items-center justify-center font-bold text-neutral-300 shrink-0 ${text}`}
       title={orgName}
     >
       {initials}

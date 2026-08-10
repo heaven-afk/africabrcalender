@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useRef, useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   format, getYear, eachMonthOfInterval, startOfYear, endOfYear,
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth, startOfWeek, addDays,
   eachDayOfInterval, isSameMonth, isToday,
 } from "date-fns";
+import { Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
-import { isScrimActiveOnDate, getOrgInitials } from "@/lib/utils";
+import { isScrimActiveOnDate } from "@/lib/utils";
 
 interface GridViewProps {
   currentDate: Date;
@@ -17,298 +19,228 @@ interface GridViewProps {
   scrollToRef?: React.MutableRefObject<((dir: "prev" | "next" | "today") => void) | null>;
 }
 
-const CAT_COLOR: Record<string, string> = {
-  ranking:    "245,158,11",   // amber-500
-  tournament: "6,182,212",    // cyan-500
-  scrim:      "16,185,129",   // emerald-500
-  award:      "168,85,247",   // purple-500
-  podcast:    "244,63,94",    // rose-500
-};
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const CATEGORY_ICON = { ranking: Medal, tournament: Trophy, scrim: Crosshair, award: Award, podcast: Mic2 };
 
-/** Build CSS background for a day cell based on up to 4 active event colors */
-function buildCellBg(dayEvents: CalendarEvent[]): React.CSSProperties {
-  if (dayEvents.length === 0) return { background: "rgba(18, 18, 24, 0.45)" };
-
-  const colors = dayEvents.slice(0, 4).map((e) => CAT_COLOR[e.category] || "150,150,160");
-
-  if (colors.length === 1) {
-    const c = colors[0];
-    return {
-      background: `radial-gradient(circle at 60% 40%, rgba(${c},0.35) 0%, rgba(${c},0.05) 75%), rgba(18,18,24,0.65)`,
-    };
-  }
-
-  if (colors.length === 2) {
-    const [c1, c2] = colors;
-    return {
-      background: `linear-gradient(135deg, rgba(${c1},0.35) 0%, rgba(${c2},0.35) 100%), rgba(18,18,24,0.65)`,
-    };
-  }
-
-  if (colors.length === 3) {
-    const [c1, c2, c3] = colors;
-    return {
-      background: `linear-gradient(135deg, rgba(${c1},0.35) 0%, rgba(${c2},0.3) 50%, rgba(${c3},0.35) 100%), rgba(18,18,24,0.65)`,
-    };
-  }
-
-  // 4 or more events: 4-quadrant blended radial background
-  const [c1, c2, c3, c4] = colors;
-  return {
-    background: `radial-gradient(circle at 20% 20%, rgba(${c1},0.35) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(${c2},0.35) 0%, transparent 60%), radial-gradient(circle at 20% 80%, rgba(${c3},0.35) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(${c4},0.35) 0%, transparent 60%), rgba(18,18,24,0.65)`,
-  };
-}
-
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-const MONTH_LETTERS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
-
-function getEventsForDay(dateStr: string, events: CalendarEvent[]): CalendarEvent[] {
-  return events.filter((evt) => {
-    if (evt.category === "scrim") {
-      return evt.recurrence
-        ? isScrimActiveOnDate(dateStr, evt.recurrence, evt.startDate, evt.endDate)
-        : false;
+function getEventsForDay(date: string, events: CalendarEvent[]) {
+  return events.filter((event) => {
+    if (event.category === "scrim") {
+      return event.recurrence
+        ? isScrimActiveOnDate(date, event.recurrence, event.startDate, event.endDate)
+        : date >= event.startDate && date <= event.endDate;
     }
-    return dateStr >= evt.startDate && dateStr <= evt.endDate;
+    return date >= event.startDate && date <= event.endDate;
   });
 }
 
-const EventLogo: React.FC<{ event: CalendarEvent }> = ({ event }) => {
-  if (event.orgLogoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={event.orgLogoUrl}
-        alt={event.orgName}
-        className="cal-logo"
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-      />
-    );
-  }
+const EventMark = ({ event }: { event: CalendarEvent }) => {
+  const Icon = CATEGORY_ICON[event.category];
   return (
-    <div className="cal-logo-initials">
-      {getOrgInitials(event.orgName)}
-    </div>
+    <span className={`cal-event-mark cal-event-mark--${event.category}`} title={`${event.name} — ${event.orgName}`}>
+      {event.orgLogoUrl ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={event.orgLogoUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onError={(error) => {
+              error.currentTarget.style.display = "none";
+              const fallback = error.currentTarget.nextElementSibling as HTMLElement | null;
+              if (fallback) fallback.style.display = "block";
+            }}
+          />
+          <Icon className="cal-event-fallback" aria-hidden="true" />
+        </>
+      ) : <Icon aria-hidden="true" />}
+    </span>
   );
 };
 
-interface DayCellData {
-  idx: number;
-  ds: string;
-  dayNum: string;
+interface DayCell {
+  date: string;
+  number: string;
   inMonth: boolean;
   today: boolean;
   dayEvents: CalendarEvent[];
-  hasEvents: boolean;
-  cellBg: React.CSSProperties;
-  displayEvents: CalendarEvent[];
-  overflowCount: number;
 }
 
-/** One month block with memoized date & day rendering */
-const MonthBlock: React.FC<{
+interface MonthBlockProps {
   month: Date;
   events: CalendarEvent[];
   onDayClick: (date: string, events: CalendarEvent[]) => void;
-  monthRef: (el: HTMLDivElement | null) => void;
-}> = React.memo(({ month, events, onDayClick, monthRef }) => {
-  const mStart = startOfMonth(month);
-  const mEnd = endOfMonth(month);
-  const calStart = startOfWeek(mStart, { weekStartsOn: 1 });
-  const calEnd = endOfWeek(mEnd, { weekStartsOn: 1 });
-  const days = useMemo(() => eachDayOfInterval({ start: calStart, end: calEnd }), [calStart, calEnd]);
+  monthRef: (node: HTMLDivElement | null) => void;
+}
 
-  // Pre-calculate days grid
-  const daysGrid: DayCellData[] = useMemo(() => {
-    return days.map((day: Date, idx: number) => {
-      const ds = format(day, "yyyy-MM-dd");
+function HoverLogo({ event }: { event: CalendarEvent }) {
+  const Icon = CATEGORY_ICON[event.category];
+  return event.orgLogoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={event.orgLogoUrl} alt={`${event.orgName} logo`} loading="lazy" decoding="async" />
+  ) : <span><Icon /></span>;
+}
+
+const MonthBlock = React.memo(function MonthBlock({
+  month,
+  events,
+  onDayClick,
+  monthRef,
+}: MonthBlockProps) {
+  const [hoveredDay, setHoveredDay] = useState<{
+    date: string;
+    events: CalendarEvent[];
+    left: number;
+    top: number;
+  } | null>(null);
+  const days = useMemo<DayCell[]>(() => {
+    const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+    const end = addDays(start, 41);
+    return eachDayOfInterval({ start, end }).map((day: Date) => {
+      const date = format(day, "yyyy-MM-dd");
       const inMonth = isSameMonth(day, month);
-      const today = isToday(day);
-      const dayEvents = inMonth ? getEventsForDay(ds, events) : [];
-      const hasEvents = dayEvents.length > 0;
-      const cellBg = buildCellBg(hasEvents ? dayEvents : []);
-      const displayEvents = dayEvents.slice(0, 4);
-      const overflowCount = dayEvents.length - 4;
-
-      return {
-        idx,
-        ds,
-        dayNum: format(day, "d"),
-        inMonth,
-        today,
-        dayEvents,
-        hasEvents,
-        cellBg,
-        displayEvents,
-        overflowCount,
-      };
+      const dayEvents = inMonth ? getEventsForDay(date, events) : [];
+      return { date, number: format(day, "d"), inMonth, today: isToday(day), dayEvents };
     });
-  }, [days, month, events]);
+  }, [month, events]);
+
+  const eventCount = useMemo(() => new Set(events.map((event) => event.id)).size, [events]);
 
   return (
-    <div ref={monthRef} className="w-full scroll-mt-20 p-2.5 sm:p-4 rounded-2xl liquid-glass-card border border-white/[0.05]">
-      {/* Month label */}
-      <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-white/[0.06]">
-        <h3 className="font-display font-bold text-white text-sm sm:text-base tracking-wide">
-          {format(month, "MMMM")}
-        </h3>
-        <span className="text-[10px] font-mono font-medium text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-          {format(month, "yyyy")}
-        </span>
+    <div ref={monthRef} className="month-board scroll-mt-28">
+      <header className="month-board__header">
+        <div><h3>{format(month, "MMMM")}</h3><span>{format(month, "yyyy")}</span></div>
+        <span className="month-board__count">{eventCount} {eventCount === 1 ? "event" : "events"}</span>
+      </header>
+
+      <div className="month-weekdays" aria-hidden="true">
+        {WEEKDAYS.map((day) => <span key={day}>{day}</span>)}
       </div>
 
-      {/* Weekday header */}
-      <div className="grid grid-cols-7 mb-1.5 gap-1">
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="text-center text-[9.5px] font-bold text-zinc-500 py-0.5 uppercase tracking-wider">
-            {d}
-          </div>
-        ))}
-      </div>
-
-      {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-        {daysGrid.map(({ idx, ds, dayNum, inMonth, today, dayEvents, hasEvents, cellBg, displayEvents, overflowCount }) => {
-          const logoCount = displayEvents.length;
-          const containerClass =
-            logoCount <= 2
-              ? `flex items-center gap-0.5 logo-container-${logoCount}`
-              : `grid grid-cols-2 gap-0.5 logo-container-${logoCount}`;
-
+      <div className="month-days">
+        {days.map(({ date, number, inMonth, today, dayEvents }: DayCell) => {
+          const hasEvents = dayEvents.length > 0;
           return (
-            <div
-              key={idx}
-              onClick={() => hasEvents && inMonth && onDayClick(ds, dayEvents)}
-              style={inMonth ? cellBg : { background: "transparent" }}
-              className={`cal-cell touch-manipulation ${!inMonth ? "empty" : ""} ${today ? "is-today" : ""} ${
-                !inMonth ? "opacity-0 pointer-events-none" : ""
-              } ${hasEvents && inMonth ? "active:scale-95 cursor-pointer hover:border-amber-400/60" : ""} ${
-                today ? "ring-1.5 ring-amber-400/90 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : ""
-              }`}
+            <button
+              key={date}
+              type="button"
+              disabled={!inMonth || !hasEvents}
+              onClick={() => onDayClick(date, dayEvents)}
+              onMouseEnter={(mouseEvent) => {
+                if (!hasEvents || window.matchMedia("(hover: none)").matches) return;
+                const rect = mouseEvent.currentTarget.getBoundingClientRect();
+                const cardWidth = 286;
+                const left = rect.right + cardWidth + 12 < window.innerWidth
+                  ? rect.right + 8
+                  : Math.max(8, rect.left - cardWidth - 8);
+                setHoveredDay({
+                  date,
+                  events: dayEvents,
+                  left,
+                  top: Math.max(8, Math.min(rect.top, window.innerHeight - 230)),
+                });
+              }}
+              onMouseLeave={() => setHoveredDay(null)}
+              className={`cal-cell ${!inMonth ? "is-outside" : ""} ${today ? "is-today" : ""} ${hasEvents ? "has-events" : ""}`}
+              aria-label={inMonth ? `${format(new Date(`${date}T12:00:00`), "MMMM d")}${hasEvents ? `, ${dayEvents.length} events` : ", no events"}` : undefined}
             >
-              {inMonth && (
-                <>
-                  <span className="cal-day-num">{dayNum}</span>
-
-                  {/* Logos — up to 4 */}
-                  {hasEvents && (
-                    <div className={containerClass}>
-                      {displayEvents.map((evt) => (
-                        <EventLogo key={evt.id} event={evt} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Overflow badge if > 4 */}
-                  {overflowCount > 0 && (
-                    <div className="cal-overflow">+{overflowCount}</div>
-                  )}
-                </>
+              {inMonth && <span className="cal-day-num">{number}</span>}
+              {hasEvents && (
+                <span className="cal-event-stack">
+                  {dayEvents.slice(0, 2).map((event: CalendarEvent) => <EventMark key={event.id} event={event} />)}
+                  {dayEvents.length > 2 && <span className="cal-overflow">+{dayEvents.length - 2}</span>}
+                </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {hoveredDay && createPortal((
+        <div className="calendar-hover-card" style={{ left: hoveredDay.left, top: hoveredDay.top }} role="status">
+          <header>
+            <div>
+              <strong>{format(new Date(`${hoveredDay.date}T12:00:00`), "EEEE")}</strong>
+              <span>{format(new Date(`${hoveredDay.date}T12:00:00`), "MMMM d")}</span>
+            </div>
+            <span>{hoveredDay.events.length}</span>
+          </header>
+          <div>
+            {hoveredDay.events.slice(0, 4).map((event) => (
+              <article key={event.id} className={`calendar-hover-event calendar-hover-event--${event.category}`}>
+                <HoverLogo event={event} />
+                <div><small>{event.category}</small><strong>{event.name}</strong><span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span></div>
+              </article>
+            ))}
+            {hoveredDay.events.length > 4 && <p>+{hoveredDay.events.length - 4} more events</p>}
+          </div>
+        </div>
+      ), document.body)}
     </div>
   );
 });
 
-MonthBlock.displayName = "MonthBlock";
-
-/** Full-year grid with all months stacked vertically (2 columns on desktop) */
-export const GridView: React.FC<GridViewProps> = ({
-  currentDate,
-  allEvents,
-  onDayClick,
-  scrollToRef,
-}) => {
+export const GridView: React.FC<GridViewProps> = ({ currentDate, allEvents, onDayClick, scrollToRef }) => {
   const year = getYear(currentDate);
-
-  const months = useMemo(() => {
-    return eachMonthOfInterval({
-      start: startOfYear(new Date(year, 0, 1)),
-      end: endOfYear(new Date(year, 0, 1)),
-    });
-  }, [year]);
-
+  const months = useMemo(() => eachMonthOfInterval({
+    start: startOfYear(new Date(year, 0, 1)),
+    end: endOfYear(new Date(year, 0, 1)),
+  }), [year]);
   const monthRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Instant scroll on mobile to remove navigation lag, smooth on desktop
-  const scrollToMonth = useCallback((dir: "prev" | "next" | "today") => {
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    const scrollBehavior: ScrollBehavior = isMobile ? "auto" : "smooth";
-
-    if (dir === "today") {
-      const todayEl = document.querySelector(".cal-cell.is-today");
-      if (todayEl) {
-        todayEl.scrollIntoView({ behavior: scrollBehavior, block: "center" });
-      } else {
-        const todayIndex = new Date().getMonth();
-        monthRefs.current[todayIndex]?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
-      }
+  const scrollToMonth = useCallback((direction: "prev" | "next" | "today") => {
+    const behavior: ScrollBehavior = window.innerWidth < 768 ? "auto" : "smooth";
+    if (direction === "today") {
+      const index = new Date().getFullYear() === year ? new Date().getMonth() : currentDate.getMonth();
+      monthRefs.current[index]?.scrollIntoView({ behavior, block: "start" });
       return;
     }
-
-    let closest = 0;
-    let closestDist = Infinity;
-    monthRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const dist = Math.abs(rect.top - 80);
-      if (dist < closestDist) { closestDist = dist; closest = i; }
+    let nearest = 0;
+    let distance = Number.POSITIVE_INFINITY;
+    monthRefs.current.forEach((node, index) => {
+      if (!node) return;
+      const nextDistance = Math.abs(node.getBoundingClientRect().top - 88);
+      if (nextDistance < distance) { distance = nextDistance; nearest = index; }
     });
-    const target = Math.max(0, Math.min(months.length - 1, closest + (dir === "next" ? 1 : -1)));
-    monthRefs.current[target]?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
-  }, [months.length]);
+    const target = Math.max(0, Math.min(11, nearest + (direction === "next" ? 1 : -1)));
+    monthRefs.current[target]?.scrollIntoView({ behavior, block: "start" });
+  }, [currentDate, year]);
 
+  useEffect(() => { if (scrollToRef) scrollToRef.current = scrollToMonth; }, [scrollToRef, scrollToMonth]);
   useEffect(() => {
-    if (scrollToRef) scrollToRef.current = scrollToMonth;
-  }, [scrollToRef, scrollToMonth]);
+    const frame = window.requestAnimationFrame(() => monthRefs.current[currentDate.getMonth()]?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentDate]);
 
   return (
-    <div className="flex gap-4">
-      {/* Month letter sidebar */}
-      <div className="hidden xl:flex flex-col w-7 pt-2 shrink-0 gap-1 liquid-glass p-1 rounded-xl h-fit sticky top-20">
-        {MONTH_LETTERS.map((m, i) => (
+    <section className="calendar-layout" aria-label={`${year} calendar`}>
+      <nav className="month-jump" aria-label="Jump to month">
+        {MONTHS_SHORT.map((label, index) => (
           <button
-            key={i}
-            onClick={() => monthRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className={`h-6 flex items-center justify-center text-[10px] font-bold leading-none transition-all rounded-lg ${
-              i === currentDate.getMonth()
-                ? "text-amber-400 bg-amber-500/10 border border-amber-500/30"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
-            }`}
-          >
-            {m}
-          </button>
+            key={label}
+            onClick={() => monthRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className={index === currentDate.getMonth() ? "is-current" : ""}
+          >{label}</button>
         ))}
-      </div>
+      </nav>
 
-      {/* 2-column month grid */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-        {months.map((month: Date, i: number) => {
-          const monthStr = format(month, "yyyy-MM");
-          const monthEvents = allEvents.filter((evt) => {
-            if (evt.category === "scrim") {
-              const mStart = format(startOfMonth(month), "yyyy-MM-dd");
-              const mEnd = format(endOfMonth(month), "yyyy-MM-dd");
-              return evt.startDate <= mEnd && evt.endDate >= mStart;
-            }
-            return evt.startDate <= format(endOfMonth(month), "yyyy-MM-dd") &&
-                   evt.endDate   >= format(startOfMonth(month), "yyyy-MM-dd");
-          });
-
+      <div className="year-grid">
+        {months.map((month: Date, index: number) => {
+          const start = format(startOfMonth(month), "yyyy-MM-dd");
+          const end = format(endOfMonth(month), "yyyy-MM-dd");
+          const monthEvents = allEvents.filter((event) => event.startDate <= end && event.endDate >= start);
           return (
             <MonthBlock
-              key={monthStr}
+              key={format(month, "yyyy-MM")}
               month={month}
               events={monthEvents}
               onDayClick={onDayClick}
-              monthRef={(el) => { monthRefs.current[i] = el; }}
+              monthRef={(node) => { monthRefs.current[index] = node; }}
             />
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };

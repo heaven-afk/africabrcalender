@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { readJsonStore } from "@/lib/fileStore";
 import { saveEvent } from "@/lib/kv";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const store = readJsonStore();
     const events = Array.from(store.values());

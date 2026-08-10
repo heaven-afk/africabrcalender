@@ -20,7 +20,6 @@ export function isKvConfigured(): boolean {
   return Boolean(url && url.length > 0 && token && token.length > 0);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const kvClient = kv as any;
 
 // ─── Server-only file store (lazy-loaded only in API routes) ───────────────
@@ -32,9 +31,7 @@ import { readJsonStore, writeJsonStore } from "./fileStore";
  */
 export async function getEvents(month?: string): Promise<CalendarEvent[]> {
   try {
-    if (isSupabaseConfigured()) {
-      return await getSupabaseEvents(month);
-    }
+    if (isSupabaseConfigured()) return await getSupabaseEvents(month);
 
     if (isKvConfigured()) {
       let eventIds = (await kvClient.smembers("events:all")) as string[];
@@ -90,7 +87,7 @@ export async function getEvents(month?: string): Promise<CalendarEvent[]> {
     }
   } catch (error) {
     console.error("Error fetching events:", error);
-    return [];
+    throw error;
   }
 }
 
@@ -112,7 +109,7 @@ export async function getEventById(id: string): Promise<CalendarEvent | null> {
     }
   } catch (error) {
     console.error(`Error fetching event ${id}:`, error);
-    return null;
+    throw error;
   }
 }
 

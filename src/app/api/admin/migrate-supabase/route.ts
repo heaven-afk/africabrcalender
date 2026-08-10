@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     const rows = events.map(mapEventToRow);
-    const { data, error } = await client.from("events").upsert(rows, { onConflict: "id" });
+    const { error } = await client.from("events").upsert(rows, { onConflict: "id" });
 
     if (error) {
       console.error("Supabase manual migration error:", error);

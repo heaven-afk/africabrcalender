@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (event.submitterEmail) {
       await sendBookingStatusEmail({
         to: event.submitterEmail,
-        subject: `Update on your event submission "${event.name}" - Africa BR Calendar`,
+        subject: `Update on your event submission "${event.name}" — Esports Calendar`,
         eventName: event.name,
         status: "rejected",
         reason: reason || "Does not meet calendar publishing guidelines.",

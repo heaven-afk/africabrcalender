@@ -2,26 +2,30 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { Show, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
   Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, ShieldAlert, Lock, LogOut, MessageSquare,
 } from "lucide-react";
-import { CalendarEvent, EventCategory, ScrimRecurrence, StreamLink } from "@/types/event";
+import { CalendarEvent, EventCategory, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
 import { LogoUploadInput } from "@/components/LogoUploadInput";
+import { SearchableSelect } from "@/components/SearchableSelect";
+import { DatePicker } from "@/components/DatePicker";
+import { GAME_OPTIONS, REGION_OPTIONS } from "@/lib/eventCatalog";
+import { TimePicker } from "@/components/TimePicker";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
   const { user } = useUser();
   const { signOut } = useClerk();
   return (
-    <SignedIn>
+    <Show when="signed-in">
       <div className="flex items-center gap-3">
         <span className="text-xs text-[#71717a] hidden sm:block">
           {user?.primaryEmailAddress?.emailAddress || user?.fullName}
         </span>
-        <UserButton afterSignOutUrl="/admin" />
+        <UserButton />
         <button
           onClick={() => signOut()}
           className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-all"
@@ -30,7 +34,7 @@ function ClerkHeaderAuth() {
           <span className="hidden sm:inline">Log Out</span>
         </button>
       </div>
-    </SignedIn>
+    </Show>
   );
 }
 
@@ -41,9 +45,9 @@ const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-zin
 /* ─── Category colours ───────────────────────────────────────────────────── */
 const CAT_META: Record<EventCategory, { label: string; ring: string; bg: string; text: string }> = {
   ranking:    { label: "Ranking",    ring: "border-amber-500",  bg: "bg-amber-500/10",  text: "text-amber-300" },
-  tournament: { label: "Tournament", ring: "border-cyan-500",   bg: "bg-cyan-500/10",   text: "text-cyan-300" },
+  tournament: { label: "Tournament", ring: "border-[#b8ff3d]", bg: "bg-[#b8ff3d]/10", text: "text-[#cfff7c]" },
   scrim:      { label: "Scrim",      ring: "border-emerald-500",bg: "bg-emerald-500/10",text: "text-emerald-300" },
-  award:      { label: "Award",      ring: "border-purple-500", bg: "bg-purple-500/10", text: "text-purple-300" },
+  award:      { label: "Award",      ring: "border-orange-500", bg: "bg-orange-500/10", text: "text-orange-300" },
   podcast:    { label: "Podcast",    ring: "border-rose-500",   bg: "bg-rose-500/10",   text: "text-rose-300" },
 };
 
@@ -120,6 +124,7 @@ function AdminDashboard() {
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState<EventCategory>("tournament");
   const [formGame, setFormGame] = useState("");
+  const [formDescription, setFormDescription] = useState("");
   const [formStage, setFormStage] = useState("");
   const [formStartDate, setFormStartDate] = useState("");
   const [formEndDate, setFormEndDate] = useState("");
@@ -129,7 +134,7 @@ function AdminDashboard() {
   const [formDaysOfWeek, setFormDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [formStartTime, setFormStartTime] = useState("19:00");
   const [formEndTime, setFormEndTime] = useState("21:00");
-  const [formTimezone, setFormTimezone] = useState("Africa/Lagos");
+  const [formTimezone, setFormTimezone] = useState("UTC");
   const [formExceptions, setFormExceptions] = useState("");
   const [formStreamLinks, setFormStreamLinks] = useState<StreamLink[]>([{ label: "Main Stream", url: "" }]);
   const [formDiscordUrl, setFormDiscordUrl] = useState("");
@@ -207,10 +212,10 @@ function AdminDashboard() {
   /* ─── Modal helpers ─────────────────────────────────────────────────────── */
   const resetForm = () => {
     const today = new Date().toISOString().slice(0, 10);
-    setFormName(""); setFormCategory("tournament"); setFormGame(""); setFormStage("");
+    setFormName(""); setFormCategory("tournament"); setFormGame(""); setFormDescription(""); setFormStage("");
     setFormStartDate(today); setFormEndDate(today); setFormOrgName("");
     setFormOrgLogoUrl(""); setFormRegion(""); setFormDaysOfWeek([1,2,3,4,5]);
-    setFormStartTime("19:00"); setFormEndTime("21:00"); setFormTimezone("Africa/Lagos");
+    setFormStartTime("19:00"); setFormEndTime("21:00"); setFormTimezone("UTC");
     setFormExceptions(""); setFormStreamLinks([{ label: "Main Stream", url: "" }]);
     setFormDiscordUrl(""); setFormWebsiteUrl("");
   };
@@ -226,6 +231,7 @@ function AdminDashboard() {
     setFormName(evt.name || "");
     setFormCategory(evt.category || "tournament");
     setFormGame(evt.game || "");
+    setFormDescription(evt.description || evt.location?.note || "");
     setFormStage(evt.stage || "");
     setFormStartDate(evt.startDate || "");
     setFormEndDate(evt.endDate || "");
@@ -236,13 +242,13 @@ function AdminDashboard() {
       setFormDaysOfWeek(evt.recurrence.daysOfWeek || [1,2,3,4,5]);
       setFormStartTime(evt.recurrence.startTime || "19:00");
       setFormEndTime(evt.recurrence.endTime || "21:00");
-      setFormTimezone(evt.recurrence.timezone || "Africa/Lagos");
+      setFormTimezone(evt.recurrence.timezone || "UTC");
       setFormExceptions((evt.recurrence.exceptions || []).join(", "));
     } else {
       setFormDaysOfWeek([1,2,3,4,5]);
-      setFormStartTime("19:00");
-      setFormEndTime("21:00");
-      setFormTimezone("Africa/Lagos");
+      setFormStartTime(evt.startTime || "");
+      setFormEndTime(evt.endTime || "");
+      setFormTimezone("UTC");
       setFormExceptions("");
     }
     setFormStreamLinks(evt.streamLinks?.length ? evt.streamLinks : [{ label: "Main Stream", url: "" }]);
@@ -266,6 +272,9 @@ function AdminDashboard() {
         name: formName.trim(),
         category: formCategory,
         game: formGame.trim() || null,
+        description: formDescription.trim() || null,
+        startTime: formStartTime || null,
+        endTime: formEndTime || null,
         stage: formStage.trim() || null,
         startDate: formStartDate,
         endDate: formEndDate,
@@ -277,6 +286,7 @@ function AdminDashboard() {
         location: {
           discordUrl: formDiscordUrl.trim() || undefined,
           websiteUrl: formWebsiteUrl.trim() || undefined,
+          note: formDescription.trim() || undefined,
         },
         recurrence: formCategory === "scrim" ? {
           daysOfWeek: formDaysOfWeek,
@@ -346,7 +356,7 @@ function AdminDashboard() {
           <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black font-extrabold text-xs sm:text-sm shadow-lg hover:scale-[1.02] transition-transform self-start sm:self-auto"
-            style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}
+            style={{ background: "#b8ff3d" }}
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             New Event
@@ -359,7 +369,7 @@ function AdminDashboard() {
             onClick={() => setActiveTab("published")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === "published"
-                ? "bg-[#1c1c20] text-amber-400 border border-amber-500/30 shadow-lg"
+                ? "bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/40"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -371,14 +381,14 @@ function AdminDashboard() {
             onClick={() => setActiveTab("pending")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
               activeTab === "pending"
-                ? "bg-[#1c1c20] text-amber-400 border border-amber-500/30 shadow-lg"
+                ? "bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/40"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <Clock className="w-3.5 h-3.5 text-[#c9ff70]" />
             Pending Bookings
             {pendingEvents.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-black animate-pulse">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#b8ff3d] text-white">
                 {pendingEvents.length}
               </span>
             )}
@@ -388,13 +398,13 @@ function AdminDashboard() {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center p-24 gap-3">
-            <Loader2 className="w-5 h-5 text-[#e8a33d] animate-spin" />
+            <Loader2 className="w-5 h-5 text-[#c9ff70] animate-spin" />
             <span className="text-sm text-[#52525b]">Loading events…</span>
           </div>
         ) : activeTab === "pending" ? (
           /* PENDING BOOKINGS VIEW */
           pendingEvents.length === 0 ? (
-            <div className="p-16 text-center rounded-2xl bg-[#111113] border border-[#27272a]">
+            <div className="p-16 text-center rounded-2xl bg-[#0a0c0b] border border-[#222624]">
               <CheckCircle2 className="w-10 h-10 text-emerald-500/60 mx-auto mb-3" />
               <h3 className="font-display font-bold text-white text-base">No Pending Bookings</h3>
               <p className="text-xs text-[#52525b] mt-1">All public event booking requests have been reviewed.</p>
@@ -402,13 +412,13 @@ function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {pendingEvents.map((evt) => (
-                <div key={evt.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-[#141417] border border-amber-500/20 hover:border-amber-500/40 transition-colors">
+                <div key={evt.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-[#0a0c0b] border border-[#b8ff3d]/25 hover:border-[#b8ff3d]/55 transition-colors">
                   <div className="flex items-start gap-3.5 min-w-0">
                     <CatBadge cat={evt.category} />
                     <div className="min-w-0">
                       <div className="font-display font-bold text-white text-base truncate flex items-center gap-2">
                         {evt.name}
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/25">
                           PENDING APPROVAL
                         </span>
                       </div>
@@ -419,13 +429,13 @@ function AdminDashboard() {
                         {evt.region && (
                           <>
                             <span>·</span>
-                            <span className="text-[#e8a33d]">{evt.region}</span>
+                            <span className="text-[#c9ff70]">{evt.region}</span>
                           </>
                         )}
                         {evt.submitterEmail && (
                           <>
                             <span>·</span>
-                            <span className="text-cyan-400 font-mono">Submitter: {evt.submitterEmail}</span>
+                            <span className="text-[#b8ff3d] font-mono">Submitter: {evt.submitterEmail}</span>
                           </>
                         )}
                       </div>
@@ -456,12 +466,12 @@ function AdminDashboard() {
           )
         ) : events.length === 0 ? (
           /* PUBLISHED EVENTS VIEW EMPTY */
-          <div className="p-16 text-center rounded-2xl bg-[#111113] border border-[#27272a]">
+          <div className="p-16 text-center rounded-2xl bg-[#0a0c0b] border border-[#222624]">
             <Calendar className="w-10 h-10 text-[#3f3f46] mx-auto mb-3" />
             <h3 className="font-display font-bold text-white text-base">No Events Added Yet</h3>
             <p className="text-xs text-[#52525b] mt-1 mb-4">Click &ldquo;New Event&rdquo; to create your first event entry.</p>
             <button onClick={handleOpenAdd} className="px-4 py-2 rounded-xl text-xs font-bold text-black"
-              style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}>
+              style={{ background: "#b8ff3d" }}>
               Create Event
             </button>
           </div>
@@ -469,7 +479,7 @@ function AdminDashboard() {
           /* PUBLISHED EVENTS VIEW LIST */
           <div className="space-y-3">
             {events.map((evt) => (
-              <div key={evt.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#141417] border border-[#27272a] hover:border-[#3f3f46] transition-colors">
+              <div key={evt.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#0a0c0b] border border-[#222624] hover:border-[#373d39] transition-colors">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <CatBadge cat={evt.category} />
                   <div className="min-w-0">
@@ -481,7 +491,7 @@ function AdminDashboard() {
                       {evt.region && (
                         <>
                           <span>·</span>
-                          <span className="text-[#e8a33d]">{evt.region}</span>
+                          <span className="text-[#c9ff70]">{evt.region}</span>
                         </>
                       )}
                     </div>
@@ -513,7 +523,7 @@ function AdminDashboard() {
       {/* Edit / Create Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn" onClick={() => setIsModalOpen(false)}>
-          <div className="relative w-full max-w-2xl bg-[#141417] border border-[#27272a] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+          <div className="match-dialog relative w-full max-w-2xl overflow-hidden max-h-[92vh] flex flex-col animate-scaleIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1e]">
               <h3 className="font-display font-bold text-white text-lg">
                 {editingEvent ? "Edit Event" : "Create New Event"}
@@ -531,7 +541,7 @@ function AdminDashboard() {
                 </div>
                 <div>
                   <label className={labelCls}>Game Title</label>
-                  <input type="text" value={formGame} onChange={(e) => setFormGame(e.target.value)} placeholder="e.g. Apex Legends, Free Fire" className={fieldCls} />
+                  <SearchableSelect value={formGame} onChange={setFormGame} items={GAME_OPTIONS} placeholder="Choose a game" searchPlaceholder="Search games…" />
                 </div>
                 <div>
                   <label className={labelCls}>Category *</label>
@@ -545,10 +555,15 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              <div>
+                <label className={labelCls}>Description</label>
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} maxLength={800} placeholder="What players and viewers should know about this event" className={`${fieldCls} min-h-24 resize-y`} />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Organization Name *</label>
-                  <input type="text" required value={formOrgName} onChange={(e) => setFormOrgName(e.target.value)} placeholder="e.g. African Battle Royale Community" className={fieldCls} />
+                  <input type="text" required value={formOrgName} onChange={(e) => setFormOrgName(e.target.value)} placeholder="e.g. Global Apex League" className={fieldCls} />
                 </div>
                 <LogoUploadInput
                   label="Org Logo (Upload or URL)"
@@ -560,21 +575,26 @@ function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Start Date *</label>
-                  <input type="date" required value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} className={fieldCls} />
+                  <DatePicker value={formStartDate} onChange={setFormStartDate} />
                 </div>
                 <div>
                   <label className={labelCls}>End Date *</label>
-                  <input type="date" required value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} className={fieldCls} />
+                  <DatePicker value={formEndDate} onChange={setFormEndDate} min={formStartDate} />
                 </div>
                 <div>
                   <label className={labelCls}>Region</label>
-                  <input type="text" value={formRegion} onChange={(e) => setFormRegion(e.target.value)} placeholder="e.g. Sub Saharan Africa" className={fieldCls} />
+                  <SearchableSelect value={formRegion} onChange={setFormRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" />
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label className={labelCls}>Start Time</label><TimePicker value={formStartTime} onChange={setFormStartTime} placeholder="Choose start time" /></div>
+                <div><label className={labelCls}>End Time (optional)</label><TimePicker value={formEndTime} onChange={setFormEndTime} placeholder="No end time" optional /></div>
+              </div>
+
               {formCategory === "scrim" && (
-                <div className="p-4 rounded-xl bg-[#0e0e10] border border-[#27272a] space-y-3">
-                  <div className="text-xs font-bold text-[#e8a33d] uppercase tracking-wider flex items-center gap-1.5">
+                <div className="p-4 rounded-xl bg-[#070908] border border-[#222624] space-y-3">
+                  <div className="text-xs font-bold text-[#c9ff70] uppercase tracking-wider flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" /> Scrim Schedule Recurrence
                   </div>
                   <div>
@@ -584,21 +604,11 @@ function AdminDashboard() {
                         const checked = formDaysOfWeek.includes(d.val);
                         return (
                           <button key={d.val} type="button" onClick={() => setFormDaysOfWeek((prev) => checked ? prev.filter((x) => x !== d.val) : [...prev, d.val])}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${checked ? "bg-[#e8a33d] text-black" : "bg-[#1c1c20] border border-[#27272a] text-[#52525b]"}`}>
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${checked ? "bg-[#b8ff3d] text-white" : "bg-[#111412] border border-[#222624] text-[#69736c]"}`}>
                             {d.label}
                           </button>
                         );
                       })}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelCls}>Start Time</label>
-                      <input type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} className={fieldCls} />
-                    </div>
-                    <div>
-                      <label className={labelCls}>End Time</label>
-                      <input type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)} className={fieldCls} />
                     </div>
                   </div>
                 </div>
@@ -619,7 +629,7 @@ function AdminDashboard() {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[#1c1c20] border border-[#27272a] text-[#a1a1aa] text-sm font-semibold hover:text-white transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSaving} className="flex items-center gap-2 px-5 py-2 rounded-xl text-black text-sm font-extrabold shadow-lg hover:scale-[1.02] transition-transform disabled:opacity-50" style={{ background: "linear-gradient(135deg,#e8a33d,#c9821f)" }}>
+                <button type="submit" disabled={isSaving} className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-extrabold transition-colors disabled:opacity-50" style={{ background: "#b8ff3d" }}>
                   {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingEvent ? "Save Changes" : "Publish Event"}
                 </button>
@@ -639,25 +649,25 @@ export default function AdminPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100 items-center justify-center p-24 gap-3">
-        <Loader2 className="w-6 h-6 text-[#e8a33d] animate-spin" />
+      <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100 items-center justify-center p-24 gap-3">
+        <Loader2 className="w-6 h-6 text-[#c9ff70] animate-spin" />
         <span className="text-sm text-[#52525b]">Loading Admin Portal…</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100">
+    <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[#27272a] bg-[#0a0a0c]/95 backdrop-blur-xl">
-        <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg,#e8a33d,#c9821f)" }} />
+      <header className="sticky top-0 z-50 border-b border-[#222624] bg-[#050606]/95 backdrop-blur-xl">
+        <div className="h-[2px] w-full bg-[#b8ff3d]" />
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-[#71717a] hover:text-white transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to Calendar
           </Link>
           <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-[#e8a33d]" />
+            <Lock className="w-3.5 h-3.5 text-[#c9ff70]" />
             <span className="font-display font-bold text-white text-xs uppercase tracking-wider">Admin Portal</span>
           </div>
           <ClerkHeaderAuth />
@@ -666,34 +676,33 @@ export default function AdminPage() {
 
       {/* Main Auth View */}
       <div className="flex-1">
-        <SignedOut>
+        <Show when="signed-out">
           <div className="flex flex-col items-center justify-center py-12 px-4">
             <div className="mb-6 text-center max-w-md">
-              <div className="w-12 h-12 rounded-2xl bg-[#e8a33d]/10 border border-[#e8a33d]/30 flex items-center justify-center mx-auto mb-3 shadow-xl">
-                <Lock className="w-6 h-6 text-[#e8a33d]" />
+              <div className="w-12 h-12 rounded-xl bg-[#b8ff3d]/10 border border-[#b8ff3d]/30 flex items-center justify-center mx-auto mb-3">
+                <Lock className="w-6 h-6 text-[#c9ff70]" />
               </div>
               <h2 className="font-display font-bold text-white text-2xl tracking-wide">
                 Admin Portal Sign In
               </h2>
               <p className="text-xs text-[#71717a] mt-1 leading-relaxed">
-                Sign in to manage Africa BR Calendar events. Only authorized administrator emails will be granted permission.
+                Sign in to manage the global esports calendar. Only authorized administrator emails will be granted permission.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 rounded-3xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
+            <div className="match-dialog p-6">
               <SignIn
                 routing="hash"
-                afterSignInUrl="/admin"
-                afterSignUpUrl="/admin"
+                forceRedirectUrl="/admin"
                 signUpUrl="/admin"
               />
             </div>
           </div>
-        </SignedOut>
+        </Show>
 
-        <SignedIn>
+        <Show when="signed-in">
           <AdminContent />
-        </SignedIn>
+        </Show>
       </div>
     </div>
   );

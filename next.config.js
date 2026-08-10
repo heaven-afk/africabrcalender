@@ -1,11 +1,6 @@
-const path = require("path");
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias["date-fns$"] = path.resolve(__dirname, "node_modules/date-fns/index.js");
-    return config;
-  },
+  allowedDevOrigins: ["192.168.1.136"],
 };
 
 module.exports = nextConfig;

@@ -24,6 +24,9 @@ export interface CalendarEvent {
   name: string;
   category: EventCategory;
   game?: string | null;
+  description?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   stage: string | null;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD

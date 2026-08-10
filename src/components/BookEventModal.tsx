@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Calendar, Mail, Globe, MessageSquare, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  AlertCircle, Award, Building2, CalendarDays, CheckCircle2, ChevronDown, Clock3, Crosshair,
+  Gamepad2, Globe2, Layers3, Loader2, Mail, MapPin, MessageSquare,
+  Medal, Mic2, Plus, Radio, Send, ShieldCheck, Tag, Trash2, Trophy, Type, X,
+} from "lucide-react";
 import { EventCategory, StreamLink } from "@/types/event";
 import { LogoUploadInput } from "./LogoUploadInput";
+import { DatePicker } from "./DatePicker";
+import { SearchableSelect } from "./SearchableSelect";
+import { GAME_OPTIONS, REGION_OPTIONS } from "@/lib/eventCatalog";
+import { TimePicker } from "./TimePicker";
 
 interface BookEventModalProps {
   open: boolean;
@@ -11,339 +19,153 @@ interface BookEventModalProps {
   onSuccess?: () => void;
 }
 
-const fieldCls = "w-full liquid-glass-input rounded-xl px-3.5 py-2 text-sm text-white outline-none placeholder-zinc-500 transition-all";
-const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1.5";
+const categories: { value: EventCategory; label: string; description: string; icon: React.ElementType }[] = [
+  { value: "tournament", label: "Tournament", description: "Brackets and competitive series", icon: Trophy },
+  { value: "ranking", label: "Ranking season", description: "Ladders and leaderboard periods", icon: Medal },
+  { value: "scrim", label: "Scrim schedule", description: "Recurring practice sessions", icon: Crosshair },
+  { value: "award", label: "Awards", description: "Ceremonies and recognition", icon: Award },
+  { value: "podcast", label: "Podcast or talk", description: "Shows, panels and broadcasts", icon: Mic2 },
+];
 
 export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
   const today = new Date().toISOString().slice(0, 10);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<EventCategory>("tournament");
   const [game, setGame] = useState("");
+  const [description, setDescription] = useState("");
   const [stage, setStage] = useState("");
   const [orgName, setOrgName] = useState("");
   const [orgLogoUrl, setOrgLogoUrl] = useState("");
   const [submitterEmail, setSubmitterEmail] = useState("");
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [region, setRegion] = useState("");
-  const [streamLinks, setStreamLinks] = useState<StreamLink[]>([{ label: "Main Stream", url: "" }]);
+  const [streamLinks, setStreamLinks] = useState<StreamLink[]>([{ label: "Main stream", url: "" }]);
   const [discordUrl, setDiscordUrl] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeCategory = (event: MouseEvent) => {
+      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) setCategoryOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setCategoryOpen(false); };
+    document.addEventListener("mousedown", closeCategory);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("mousedown", closeCategory); document.removeEventListener("keydown", closeOnEscape); };
+  }, []);
 
   if (!open) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(null);
-
     if (!name.trim() || !orgName.trim() || !submitterEmail.trim() || !startDate || !endDate) {
-      setError("Please fill in Event Name, Org Name, Your Email, and Dates.");
+      setError("Add the event name, organization, contact email and dates to continue.");
       return;
     }
-
     setSubmitting(true);
     try {
-      const payload = {
-        name: name.trim(),
-        category,
-        game: game.trim() || undefined,
-        stage: stage.trim() || undefined,
-        orgName: orgName.trim(),
-        orgLogoUrl: orgLogoUrl.trim() || undefined,
-        submitterEmail: submitterEmail.trim(),
-        startDate,
-        endDate,
-        region: region.trim() || undefined,
-        streamLinks: streamLinks.filter((s) => s.url.trim().length > 0),
-        location: {
-          discordUrl: discordUrl.trim() || undefined,
-          websiteUrl: websiteUrl.trim() || undefined,
-        },
-      };
-
-      const res = await fetch("/api/events/book", {
+      const response = await fetch("/api/events/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: name.trim(), category, game: game.trim() || undefined, description: description.trim() || undefined,
+          stage: stage.trim() || undefined, orgName: orgName.trim(),
+          orgLogoUrl: orgLogoUrl.trim() || undefined,
+          submitterEmail: submitterEmail.trim(), startDate, endDate, startTime: startTime || undefined, endTime: endTime || undefined,
+          region: region.trim() || undefined,
+          streamLinks: streamLinks.filter((stream) => stream.url.trim()),
+          location: {
+            discordUrl: discordUrl.trim() || undefined,
+            websiteUrl: websiteUrl.trim() || undefined,
+          },
+        }),
       });
-
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || "Failed to submit event booking");
-      }
-
-      setSuccessMsg(json.message || "Your event has been submitted! It will appear on the calendar once approved.");
-      if (onSuccess) onSuccess();
-
-      setTimeout(() => {
-        setSuccessMsg(null);
-        onClose();
-      }, 2500);
-    } catch (err: any) {
-      setError(err.message || "Submission failed. Please try again.");
+      const json = await response.json();
+      if (!response.ok || !json.success) throw new Error(json.error || "Event submission failed");
+      setSuccessMsg(json.message || "Your event was submitted and is ready for review.");
+      onSuccess?.();
+      window.setTimeout(() => { setSuccessMsg(null); onClose(); }, 2500);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Submission failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const updateStream = (index: number, key: keyof StreamLink, value: string) => {
+    setStreamLinks((current) => current.map((stream, streamIndex) => streamIndex === index ? { ...stream, [key]: value } : stream));
+  };
+
   return (
-    <div className="cmd-backdrop animate-fadeIn" onClick={onClose}>
-      <div
-        className="relative w-full max-w-2xl bg-[#101015]/95 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scaleIn my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-amber-500/[0.03]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-amber-400" />
-            </div>
-            <div>
-              <h3 className="font-display font-bold text-white text-lg tracking-wide flex items-center gap-2">
-                Book / Schedule an Event
-                <Sparkles className="w-4 h-4 text-amber-400" />
-              </h3>
-              <p className="text-xs text-zinc-400">
-                Submit your tournament, scrim, or talk show for public calendar approval.
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="drawer-backdrop booking-backdrop" onClick={onClose}>
+      <section className="submit-drawer booking-drawer" onClick={(event) => event.stopPropagation()} aria-modal="true" role="dialog" aria-labelledby="booking-title">
+        <header className="booking-header">
+          <div className="booking-header__mark"><CalendarDays /></div>
+          <div><span>Community listing</span><h2 id="booking-title">Add an event</h2><p>Share the essentials. We’ll review it before it goes live.</p></div>
+          <button type="button" onClick={onClose} aria-label="Close add event form"><X /></button>
+        </header>
 
-        {/* Content Body */}
         {successMsg ? (
-          <div className="p-10 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400 animate-bounce" />
-            </div>
-            <h4 className="font-display font-bold text-white text-xl">Booking Submitted!</h4>
-            <p className="text-sm text-zinc-300 max-w-md leading-relaxed">{successMsg}</p>
-            <p className="text-xs text-amber-400/80 font-medium">You will receive an email confirmation once approved.</p>
-          </div>
+          <div className="booking-success"><span><CheckCircle2 /></span><h3>Event received</h3><p>{successMsg}</p><small><ShieldCheck /> You’ll be notified after review.</small></div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
-            {error && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-xs font-semibold text-red-300">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+          <form onSubmit={handleSubmit} className="booking-form">
+            <div className="booking-form__body">
+              {error && <div className="booking-error" role="alert"><AlertCircle /><span>{error}</span></div>}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelCls}>Event Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Sub-Saharan Championship"
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Game Title *</label>
-                <input
-                  type="text"
-                  value={game}
-                  onChange={(e) => setGame(e.target.value)}
-                  placeholder="e.g. Apex Legends, Free Fire, PUBG"
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Event Category *</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as EventCategory)}
-                  className={fieldCls}
-                >
-                  <option value="tournament" className="bg-[#121216]">Tournament</option>
-                  <option value="ranking" className="bg-[#121216]">Ranking Ladder</option>
-                  <option value="scrim" className="bg-[#121216]">Scrim Schedule</option>
-                  <option value="award" className="bg-[#121216]">Award Ceremony</option>
-                  <option value="podcast" className="bg-[#121216]">Podcast / Talk Show</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Organization Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="e.g. Apex Africa Community"
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}><Mail className="inline w-3 h-3 mr-1 text-amber-400" />Your Email (For Notifications) *</label>
-                <input
-                  type="email"
-                  required
-                  value={submitterEmail}
-                  onChange={(e) => setSubmitterEmail(e.target.value)}
-                  placeholder="organizer@domain.com"
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelCls}>Start Date *</label>
-                <input
-                  type="date"
-                  required
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>End Date *</label>
-                <input
-                  type="date"
-                  required
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Region</label>
-                <input
-                  type="text"
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder="e.g. West Africa"
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <LogoUploadInput
-                label="Organization Logo"
-                value={orgLogoUrl}
-                onChange={setOrgLogoUrl}
-              />
-              <div>
-                <label className={labelCls}>Stage / Qualifier Info</label>
-                <input
-                  type="text"
-                  value={stage}
-                  onChange={(e) => setStage(e.target.value)}
-                  placeholder="e.g. Grand Finals"
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}><MessageSquare className="inline w-3 h-3 mr-1 text-indigo-400" />Discord Invite Link</label>
-                <input
-                  type="url"
-                  value={discordUrl}
-                  onChange={(e) => setDiscordUrl(e.target.value)}
-                  placeholder="https://discord.gg/..."
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}><Globe className="inline w-3 h-3 mr-1 text-cyan-400" />Website URL</label>
-                <input
-                  type="url"
-                  value={websiteUrl}
-                  onChange={(e) => setWebsiteUrl(e.target.value)}
-                  placeholder="https://..."
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-
-            {/* Stream Links */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className={labelCls}>Stream Links</label>
-                <button
-                  type="button"
-                  onClick={() => setStreamLinks([...streamLinks, { label: "Live Stream", url: "" }])}
-                  className="text-[10px] font-bold text-amber-400 hover:underline flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> Add Link
-                </button>
-              </div>
-              {streamLinks.map((s, idx) => (
-                <div key={idx} className="flex items-center gap-2 mb-2">
-                  <input
-                    type="text"
-                    placeholder="Label (e.g. Twitch Main)"
-                    value={s.label || ""}
-                    onChange={(e) => {
-                      const next = [...streamLinks];
-                      next[idx].label = e.target.value;
-                      setStreamLinks(next);
-                    }}
-                    className="w-1/3 liquid-glass-input rounded-xl px-3 py-1.5 text-xs text-white outline-none"
-                  />
-                  <input
-                    type="url"
-                    placeholder="https://twitch.tv/..."
-                    value={s.url}
-                    onChange={(e) => {
-                      const next = [...streamLinks];
-                      next[idx].url = e.target.value;
-                      setStreamLinks(next);
-                    }}
-                    className="flex-1 liquid-glass-input rounded-xl px-3 py-1.5 text-xs text-white outline-none"
-                  />
-                  {streamLinks.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setStreamLinks(streamLinks.filter((_, i) => i !== idx))}
-                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+              <section className="booking-section">
+                <header><span>01</span><div><h3>Event details</h3><p>What is happening and where it belongs.</p></div></header>
+                <div className="booking-fields">
+                  <label className="booking-field booking-field--wide"><span><Type />Event name <b>Required</b></span><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Global Championship 2026" /></label>
+                  <div className="booking-field"><span><Gamepad2 />Game</span><SearchableSelect value={game} onChange={setGame} items={GAME_OPTIONS} placeholder="Choose a game" searchPlaceholder="Search popular games…" emptyLabel="No game found" /></div>
+                  <div className="booking-field"><span><Tag />Category</span><div className="booking-category" ref={categoryRef}>{(() => { const selected = categories.find((item) => item.value === category) || categories[0]; const SelectedIcon = selected.icon; return <><button type="button" className="booking-category__trigger" onClick={() => setCategoryOpen((current) => !current)} aria-haspopup="listbox" aria-expanded={categoryOpen}><span><SelectedIcon /><span><strong>{selected.label}</strong><small>{selected.description}</small></span></span><ChevronDown /></button>{categoryOpen && <div className="booking-category__menu" role="listbox">{categories.map((item) => { const Icon = item.icon; return <button type="button" role="option" aria-selected={item.value === category} className={item.value === category ? "is-selected" : ""} key={item.value} onClick={() => { setCategory(item.value); setCategoryOpen(false); }}><Icon /><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.value === category && <CheckCircle2 />}</button>; })}</div>}</>; })()}</div></div>
+                  <label className="booking-field booking-field--wide"><span><Layers3 />Stage or qualifier</span><input value={stage} onChange={(e) => setStage(e.target.value)} placeholder="Optional — e.g. Grand finals" /></label>
+                  <label className="booking-field booking-field--wide booking-field--textarea"><span><MessageSquare />Description</span><textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={800} placeholder="Tell players what the event is about, who can enter, and what makes it worth following." /><small className="booking-field__count">{description.length}/800</small></label>
                 </div>
-              ))}
+              </section>
+
+              <section className="booking-section">
+                <header><span>02</span><div><h3>Organizer & schedule</h3><p>Who owns it and when it runs.</p></div></header>
+                <div className="booking-fields">
+                  <label className="booking-field"><span><Building2 />Organization <b>Required</b></span><input required value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="Organization name" /></label>
+                  <label className="booking-field"><span><Mail />Contact email <b>Required</b></span><input type="email" required value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} placeholder="organizer@example.com" /></label>
+                  <div className="booking-field"><span><CalendarDays />Start date <b>Required</b></span><DatePicker value={startDate} onChange={setStartDate} icon={CalendarDays} /></div>
+                  <div className="booking-field"><span><Clock3 />End date <b>Required</b></span><DatePicker value={endDate} onChange={setEndDate} min={startDate} icon={Clock3} /></div>
+                  <div className="booking-field"><span><Clock3 />Start time</span><TimePicker value={startTime} onChange={setStartTime} placeholder="Choose start time" /></div>
+                  <div className="booking-field"><span><Clock3 />End time <small>Optional</small></span><TimePicker value={endTime} onChange={setEndTime} placeholder="No end time" optional /></div>
+                  <div className="booking-field booking-field--wide"><span><MapPin />Region</span><SearchableSelect value={region} onChange={setRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" emptyLabel="No region found" /></div>
+                  <div className="booking-field booking-field--wide"><LogoUploadInput label="Organization logo" value={orgLogoUrl} onChange={setOrgLogoUrl} /></div>
+                </div>
+              </section>
+
+              <section className="booking-section">
+                <header><span>03</span><div><h3>Links & broadcast</h3><p>Give people somewhere useful to go.</p></div></header>
+                <div className="booking-fields">
+                  <label className="booking-field"><span><MessageSquare />Discord invite</span><input type="url" value={discordUrl} onChange={(e) => setDiscordUrl(e.target.value)} placeholder="https://discord.gg/…" /></label>
+                  <label className="booking-field"><span><Globe2 />Event website</span><input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://…" /></label>
+                  <div className="booking-streams booking-field--wide">
+                    <div className="booking-streams__head"><span><Radio />Stream links</span><button type="button" onClick={() => setStreamLinks((current) => [...current, { label: "Live stream", url: "" }])}><Plus />Add stream</button></div>
+                    {streamLinks.map((stream, index) => <div className="booking-stream" key={index}>
+                      <input value={stream.label || ""} onChange={(e) => updateStream(index, "label", e.target.value)} placeholder="Stream label" />
+                      <input type="url" value={stream.url} onChange={(e) => updateStream(index, "url", e.target.value)} placeholder="https://twitch.tv/…" />
+                      {streamLinks.length > 1 && <button type="button" onClick={() => setStreamLinks((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Remove stream"><Trash2 /></button>}
+                    </div>)}
+                  </div>
+                </div>
+              </section>
             </div>
 
-            {/* Footer buttons */}
-            <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-zinc-300 text-xs font-semibold hover:text-white transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-black text-xs font-extrabold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-                Submit Event Booking
-              </button>
-            </div>
+            <footer className="booking-footer"><p><ShieldCheck /> Listings are reviewed before publishing.</p><div><button type="button" onClick={onClose}>Cancel</button><button type="submit" disabled={submitting}>{submitting ? <Loader2 className="animate-spin" /> : <Send />}Submit event</button></div></footer>
           </form>
         )}
-      </div>
+      </section>
     </div>
   );
 };
