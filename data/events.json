@@ -3,12 +3,13 @@
     "id": "evt_1785600535410_r6kyf",
     "name": "Nova Scrims",
     "category": "scrim",
+    "game": "Call of Duty: Mobile",
     "stage": null,
     "startDate": "2026-01-08",
     "endDate": "2026-12-31",
     "orgName": "Nova Gaming",
     "orgLogoUrl": "https://i.ibb.co/KRGbnts/JK.png",
-    "region": "African",
+    "region": "Africa",
     "streamLinks": [
       {
         "label": "Main Stream",
@@ -41,12 +42,13 @@
     "id": "evt_1785626340304_iolzc",
     "name": "Season 38",
     "category": "ranking",
+    "game": "Call of Duty: Mobile",
     "stage": null,
     "startDate": "2026-08-16",
     "endDate": "2026-08-24",
     "orgName": "African Battle Royale Community",
     "orgLogoUrl": "https://i.ibb.co/Wp2JT4Zb/ABC-logo.png",
-    "region": "Sub Saharan Africa",
+    "region": "Sub-Saharan Africa",
     "streamLinks": [],
     "location": {
       "discordUrl": "https://discord.gg/24AdDxXkuk"
@@ -58,12 +60,13 @@
   {
     "name": "Season 10",
     "category": "ranking",
+    "game": "Call of Duty: Mobile",
     "stage": null,
     "startDate": "2026-08-27",
     "endDate": "2026-09-07",
     "orgName": "Major Gaming League",
     "orgLogoUrl": "https://i.ibb.co/kFFNNLh/MGL-LOGO-NBG.png",
-    "region": "Africa, Europe, North America",
+    "region": "Global",
     "streamLinks": [
       {
         "label": "Main Stream",
@@ -82,12 +85,13 @@
   {
     "name": "Season X",
     "category": "ranking",
+    "game": "Call of Duty: Mobile",
     "stage": null,
     "startDate": "2026-09-10",
     "endDate": "2026-09-20",
     "orgName": "Alpha Gaming Ranking",
     "orgLogoUrl": "https://i.ibb.co/KcCgkm1P/AGR-Logo.png",
-    "region": null,
+    "region": "Africa",
     "streamLinks": [],
     "location": {
       "discordUrl": "https://discord.gg/vV62q2JFWZ"
@@ -102,12 +106,13 @@
     "id": "evt_1785627563530_kq8ne",
     "name": "Preachers Super League",
     "category": "tournament",
+    "game": "Call of Duty: Mobile",
     "stage": "Group stages",
     "startDate": "2026-09-22",
     "endDate": "2026-10-01",
     "orgName": "Preachers",
     "orgLogoUrl": "https://i.ibb.co/jvY41Wzp/Preachers-Logo.png",
-    "region": null,
+    "region": "Africa",
     "streamLinks": [],
     "location": {},
     "recurrence": null,

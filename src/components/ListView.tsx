@@ -2,9 +2,8 @@
 
 import React from "react";
 import { format, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
-import { Tv, MessageSquare, Clock, Calendar, ChevronRight } from "lucide-react";
-import { CalendarEvent } from "@/types/event";
-import { CategoryPill } from "./CategoryPill";
+import { CalendarDays, ChevronRight, Clock3, ExternalLink, MapPin, Radio, Trophy, Medal, Crosshair, Award, Mic2 } from "lucide-react";
+import { CalendarEvent, EventCategory } from "@/types/event";
 import { OrgLogo } from "./OrgLogo";
 
 interface ListViewProps {
@@ -12,7 +11,13 @@ interface ListViewProps {
   onSelectEvent: (event: CalendarEvent) => void;
 }
 
-const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const categoryMeta: Record<EventCategory, { label: string; icon: React.ElementType }> = {
+  ranking: { label: "Ranking", icon: Medal },
+  tournament: { label: "Tournament", icon: Trophy },
+  scrim: { label: "Scrim", icon: Crosshair },
+  award: { label: "Awards", icon: Award },
+  podcast: { label: "Talk", icon: Mic2 },
+};
 
 function getStatus(evt: CalendarEvent): "live" | "upcoming" | "ended" {
   const today = startOfToday();
@@ -23,142 +28,58 @@ function getStatus(evt: CalendarEvent): "live" | "upcoming" | "ended" {
   return "live";
 }
 
-function formatDateRange(evt: CalendarEvent): string {
-  try {
-    const s = format(parseISO(evt.startDate), "MMM d");
-    const e = format(parseISO(evt.endDate), "MMM d");
-    return s === e ? s : `${s} – ${e}`;
-  } catch {
-    return `${evt.startDate} – ${evt.endDate}`;
-  }
+function dateParts(evt: CalendarEvent) {
+  const start = parseISO(evt.startDate);
+  const end = parseISO(evt.endDate);
+  return {
+    month: format(start, "MMM"),
+    day: format(start, "d"),
+    range: evt.startDate === evt.endDate ? format(start, "EEE, MMM d") : `${format(start, "MMM d")} – ${format(end, "MMM d")}`,
+  };
 }
-
-const catLeft = (category: string) => {
-  if (category === "ranking") return "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.6)]";
-  if (category === "tournament") return "bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.6)]";
-  if (category === "award") return "bg-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.6)]";
-  if (category === "podcast") return "bg-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.6)]";
-  return "bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]";
-};
 
 export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => {
   if (events.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-16 text-center rounded-2xl liquid-glass border border-white/10">
-        <Calendar className="w-10 h-10 text-zinc-600 mb-3" />
-        <h3 className="font-display font-bold text-base text-zinc-400 tracking-wider">NO EVENTS SCHEDULED</h3>
-        <p className="text-xs text-zinc-500 max-w-sm mt-1">
-          No matching events found for this period. Try adjusting the filters or navigate to a different month.
-        </p>
-      </div>
-    );
+    return <div className="empty-state"><CalendarDays /><h3>No events on the agenda</h3><p>Try another month or loosen the active filters.</p></div>;
   }
 
   return (
-    <div className="space-y-3">
-      {events.map((evt) => {
-        const status = getStatus(evt);
-        const isScrim = evt.category === "scrim";
+    <section className="agenda-view" aria-label="Event agenda">
+      <header className="view-heading">
+        <div><h2>Agenda</h2></div>
+        <p><strong>{events.length}</strong> curated event{events.length === 1 ? "" : "s"}</p>
+      </header>
 
-        return (
-          <div
-            key={evt.id}
-            onClick={() => onSelectEvent(evt)}
-            className="relative rounded-2xl liquid-glass-card hover:border-amber-500/40 transition-all cursor-pointer group overflow-hidden"
-          >
-            {/* Category left stripe */}
-            <div className={`absolute left-0 top-0 bottom-0 w-1 ${catLeft(evt.category)}`} />
+      <div className="agenda-feed">
+        {events.map((evt) => {
+          const status = getStatus(evt);
+          const date = dateParts(evt);
+          const meta = categoryMeta[evt.category];
+          const Icon = meta.icon;
+          const externalUrl = evt.streamLinks?.[0]?.url || evt.location?.websiteUrl;
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4.5 pl-6">
-
-              {/* Left: Logo + info */}
-              <div className="flex items-center gap-3.5 flex-1 min-w-0">
+          return (
+            <article key={evt.id} className={`agenda-item agenda-item--${evt.category}`}>
+              <button className="agenda-item__main" onClick={() => onSelectEvent(evt)} aria-label={`Open ${evt.name}`}>
+                <div className="agenda-date" aria-label={date.range}><span>{date.month}</span><strong>{date.day}</strong></div>
                 <OrgLogo orgName={evt.orgName} logoUrl={evt.orgLogoUrl} size="md" />
-
-                <div className="min-w-0">
-                  {/* Badges row */}
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <CategoryPill category={evt.category} size="sm" />
-                    {evt.stage && (
-                      <span className="text-[10px] font-bold text-zinc-300 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-md">
-                        {evt.stage}
-                      </span>
-                    )}
-                    {evt.region && (
-                      <span className="text-[10px] font-bold text-zinc-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-md">
-                        {evt.region}
-                      </span>
-                    )}
-                    {status === "live" && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md shadow-[0_0_10px_rgba(16,185,129,0.15)]">
-                        <span className="dot-live" />
-                        LIVE
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-display font-bold text-white text-base sm:text-lg leading-snug group-hover:text-amber-300 transition-colors truncate">
-                    {evt.name}
-                  </h3>
-
-                  {/* Sub info */}
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Hosted by <strong className="text-zinc-200">{evt.orgName}</strong>
-                    <span className="mx-2 text-zinc-600">·</span>
-                    <span>{formatDateRange(evt)}</span>
-                  </p>
+                <div className="agenda-item__copy">
+                  <div className="event-kicker"><Icon /><span>{meta.label}</span>{status === "live" && <em><i /> Live</em>}</div>
+                  <h3>{evt.name}</h3>
+                  <p><span>{evt.orgName}</span><i />{evt.game && <><span>{evt.game}</span><i /></>}<span>{date.range}</span></p>
                 </div>
-              </div>
-
-              {/* Right: schedule + quick links */}
-              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 sm:min-w-[140px]">
-                {isScrim && evt.recurrence && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
-                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>
-                      {evt.recurrence.daysOfWeek.map((d) => daysMap[d]).join(" ")} {evt.recurrence.startTime}–{evt.recurrence.endTime}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1.5">
-                  {evt.streamLinks && evt.streamLinks.length > 0 && (
-                    <a
-                      href={evt.streamLinks[0].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-zinc-300 bg-white/[0.04] border border-white/10 hover:text-amber-400 hover:border-amber-500/30 transition-all"
-                      title="Watch Stream"
-                    >
-                      <Tv className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="hidden sm:inline">Stream</span>
-                    </a>
-                  )}
-
-                  {evt.location?.discordUrl && (
-                    <a
-                      href={evt.location.discordUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-2 rounded-xl text-zinc-400 bg-white/[0.04] border border-white/10 hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
-                      title="Discord"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-
-                  <div className="p-2 rounded-xl text-zinc-500 bg-white/[0.04] border border-white/10 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-all">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </div>
+                <div className="agenda-item__details">
+                  {evt.region && <span><MapPin />{evt.region}</span>}
+                  {evt.stage && <span><Trophy />{evt.stage}</span>}
+                  {(evt.startTime || evt.recurrence?.startTime) && <span><Clock3 />{evt.startTime || evt.recurrence?.startTime}{(evt.endTime || evt.recurrence?.endTime) ? `–${evt.endTime || evt.recurrence?.endTime}` : ""}</span>}
                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+                <span className="agenda-item__arrow"><ChevronRight /></span>
+              </button>
+              {externalUrl && <a className="agenda-item__external" href={externalUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${evt.name} link`}>{evt.streamLinks?.length ? <Radio /> : <ExternalLink />}</a>}
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 };

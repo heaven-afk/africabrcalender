@@ -12,23 +12,23 @@ export const CategoryPill: React.FC<CategoryPillProps> = ({ category, size = "md
   const stylesMap: Record<EventCategory, { label: string; className: string }> = {
     ranking: {
       label: "RANKING",
-      className: "border-amber-500/40 bg-amber-500/10 text-amber-300 shadow-[0_0_10px_rgba(232,163,61,0.15)]",
+      className: "border-amber-400/60 bg-transparent text-amber-300",
     },
     tournament: {
       label: "TOURNAMENT",
-      className: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.15)]",
+      className: "border-[#b8ff3d]/60 bg-transparent text-[#cfff7c]",
     },
     scrim: {
       label: "SCRIM",
-      className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
+      className: "border-emerald-400/60 bg-transparent text-emerald-300",
     },
     award: {
       label: "AWARD CEREMONY",
-      className: "border-purple-500/40 bg-purple-500/10 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.15)]",
+      className: "border-orange-400/60 bg-transparent text-orange-300",
     },
     podcast: {
       label: "PODCAST / TALK SHOW",
-      className: "border-rose-500/40 bg-rose-500/10 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.15)]",
+      className: "border-rose-400/60 bg-transparent text-rose-300",
     },
   };
 
@@ -36,8 +36,8 @@ export const CategoryPill: React.FC<CategoryPillProps> = ({ category, size = "md
 
   return (
     <span
-      className={`inline-flex items-center justify-center font-display tracking-wider border rounded-md uppercase font-bold ${
-        isSm ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"
+      className={`inline-flex items-center justify-center tracking-[0.1em] border-l-2 border-y-0 border-r-0 uppercase font-extrabold ${
+        isSm ? "pl-2 py-0.5 text-[9px]" : "pl-2.5 py-1 text-[11px]"
       } ${style.className}`}
     >
       {style.label}

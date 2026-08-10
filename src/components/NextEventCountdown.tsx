@@ -1,247 +1,120 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Clock, Radio, ChevronRight, Zap, Gamepad2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Clock3, Gamepad2, Radio } from "lucide-react";
+import { addDays, format, parseISO, setHours, setMinutes } from "date-fns";
 import { CalendarEvent } from "@/types/event";
 import { OrgLogo } from "./OrgLogo";
 import { CategoryPill } from "./CategoryPill";
-import { parseISO, addDays, setHours, setMinutes, format } from "date-fns";
 
 interface NextEventCountdownProps {
   events: CalendarEvent[];
   onSelectEvent: (event: CalendarEvent) => void;
 }
 
-interface NextEventTarget {
-  event: CalendarEvent;
-  targetDate: Date;
-  isLive: boolean;
-}
+interface NextEventTarget { event: CalendarEvent; targetDate: Date; isLive: boolean; }
 
-/** Compute the next target date for an event relative to now */
 function getNextTarget(event: CalendarEvent, now: Date): NextEventTarget | null {
   try {
     if (event.category !== "scrim" || !event.recurrence) {
       const startDate = parseISO(event.startDate);
       const endDate = parseISO(event.endDate);
-
-      if (now >= startDate && now <= endDate) {
-        return { event, targetDate: startDate, isLive: true };
-      }
-
-      if (startDate > now) {
-        return { event, targetDate: startDate, isLive: false };
-      }
-
-      return null;
+      if (now >= startDate && now <= endDate) return { event, targetDate: startDate, isLive: true };
+      return startDate > now ? { event, targetDate: startDate, isLive: false } : null;
     }
 
-    const { startTime, daysOfWeek, exceptions } = event.recurrence;
-    const [h, m] = (startTime || "18:00").split(":").map(Number);
-
+    const { startTime, endTime, daysOfWeek, exceptions } = event.recurrence;
+    const [startHour, startMinute] = (startTime || "18:00").split(":").map(Number);
+    const [endHour, endMinute] = (endTime || "19:00").split(":").map(Number);
     const scrimStart = parseISO(event.startDate);
     const scrimEnd = parseISO(event.endDate);
-
     if (now > scrimEnd) return null;
 
     const checkDate = now < scrimStart ? new Date(scrimStart) : new Date(now);
+    for (let offset = 0; offset < 14; offset += 1) {
+      const day = addDays(checkDate, offset);
+      const dateString = format(day, "yyyy-MM-dd");
+      if (dateString > event.endDate) break;
+      if (exceptions?.includes(dateString) || !daysOfWeek.includes(day.getDay())) continue;
 
-    for (let i = 0; i < 14; i++) {
-      const d = addDays(checkDate, i);
-      const dateStr = d.toISOString().split("T")[0];
-
-      if (dateStr > event.endDate) break;
-      if (exceptions && exceptions.includes(dateStr)) continue;
-
-      const dayOfWeek = d.getDay();
-      if (daysOfWeek.includes(dayOfWeek)) {
-        const eventStart = setMinutes(setHours(d, h), m);
-        const eventEnd = addDays(eventStart, 0);
-
-        if (now >= eventStart && now <= eventEnd) {
-          return { event, targetDate: eventStart, isLive: true };
-        }
-
-        if (eventStart > now) {
-          return { event, targetDate: eventStart, isLive: false };
-        }
-      }
+      const eventStart = setMinutes(setHours(day, startHour), startMinute);
+      let eventEnd = setMinutes(setHours(day, endHour), endMinute);
+      if (eventEnd <= eventStart) eventEnd = addDays(eventEnd, 1);
+      if (now >= eventStart && now <= eventEnd) return { event, targetDate: eventStart, isLive: true };
+      if (eventStart > now) return { event, targetDate: eventStart, isLive: false };
     }
-  } catch (err) {
-    console.error("Error computing next event target:", err);
+  } catch (error) {
+    console.error("Unable to calculate the next event", error);
   }
   return null;
 }
 
-export const NextEventCountdown: React.FC<NextEventCountdownProps> = ({ events, onSelectEvent }) => {
-  const [now, setNow] = useState<Date>(new Date());
+function Countdown({ target, now }: { target: Date; now: Date }) {
+  const difference = Math.max(0, target.getTime() - now.getTime());
+  const values = [
+    { value: Math.floor(difference / 86_400_000), label: "days" },
+    { value: Math.floor((difference / 3_600_000) % 24), label: "hours" },
+    { value: Math.floor((difference / 60_000) % 60), label: "mins" },
+    { value: Math.floor((difference / 1_000) % 60), label: "secs" },
+  ];
+  return (
+    <div className="countdown" aria-label="Time until event">
+      {values.map(({ value, label }) => (
+        <div key={label}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>
+      ))}
+    </div>
+  );
+}
 
+export const NextEventCountdown: React.FC<NextEventCountdownProps> = ({ events, onSelectEvent }) => {
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const nextTarget = useMemo<NextEventTarget | null>(() => {
-    if (!events || events.length === 0) return null;
-
+  const nextTarget = useMemo(() => {
     let closest: NextEventTarget | null = null;
-
-    for (const evt of events) {
-      const target = getNextTarget(evt, now);
+    for (const event of events) {
+      const target = getNextTarget(event, now);
       if (!target) continue;
-
-      if (target.isLive) {
-        return target;
-      }
-
-      if (!closest || target.targetDate < closest.targetDate) {
-        closest = target;
-      }
+      if (target.isLive) return target;
+      if (!closest || target.targetDate < closest.targetDate) closest = target;
     }
-
     return closest;
   }, [events, now]);
 
-  const todayFormatted = format(now, "EEEE, MMMM d, yyyy");
-  const monthDayLabel = format(now, "MMMM d");
-
   return (
-    <div className="mb-5 space-y-2">
-      {/* Current Day & Month Spotlight Banner */}
-      <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/[0.04] to-transparent border border-amber-500/20 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Current Date:</span>
-          <span className="font-display font-bold text-white text-xs sm:text-sm tracking-wide">
-            {todayFormatted}
-          </span>
-        </div>
-        <div className="text-[11px] font-extrabold text-amber-400 tracking-widest uppercase bg-amber-500/15 px-2.5 py-0.5 rounded-lg border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-          {monthDayLabel}
-        </div>
+    <section className="now-board" aria-label="Current date and next event">
+      <div className="date-ticket">
+        <span>{format(now, "EEEE")}</span>
+        <strong>{format(now, "dd")}</strong>
+        <small>{format(now, "MMMM yyyy")}</small>
       </div>
 
-      {/* Ongoing / Next Event Hero Spotlight Card */}
-      {nextTarget && (
-        <div
-          onClick={() => onSelectEvent(nextTarget.event)}
-          className="group relative rounded-2xl liquid-glass-card p-3.5 sm:p-4 cursor-pointer overflow-hidden border border-white/[0.07]"
-        >
-          <div
-            className="absolute -right-12 -bottom-12 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-20 transition-opacity group-hover:opacity-35"
-            style={{
-              background: nextTarget.isLive ? "#10b981" : "#f59e0b",
-            }}
-          />
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Left: Event details */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative shrink-0">
-                <OrgLogo orgName={nextTarget.event.orgName} logoUrl={nextTarget.event.orgLogoUrl} size="md" />
-                {nextTarget.isLive && (
-                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                  </span>
-                )}
+      {nextTarget ? (
+        <button className="next-match" onClick={() => onSelectEvent(nextTarget.event)}>
+          <div className="next-match__identity">
+            <OrgLogo orgName={nextTarget.event.orgName} logoUrl={nextTarget.event.orgLogoUrl} size="md" />
+            <div>
+              <div className="next-match__labels">
+                <span className={nextTarget.isLive ? "status-live" : "status-next"}>
+                  {nextTarget.isLive ? <Radio /> : <Clock3 />}{nextTarget.isLive ? "Live now" : "Up next"}
+                </span>
+                <CategoryPill category={nextTarget.event.category} size="sm" />
               </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                  {nextTarget.isLive ? (
-                    <span className="inline-flex items-center gap-1 text-[9.5px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-md">
-                      <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-400" />
-                      Live Ongoing
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[9.5px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">
-                      <Zap className="w-2.5 h-2.5 text-amber-400" />
-                      Next Up
-                    </span>
-                  )}
-
-                  <CategoryPill category={nextTarget.event.category} size="sm" />
-
-                  {nextTarget.event.game && (
-                    <span className="inline-flex items-center gap-1 text-[9.5px] font-extrabold uppercase tracking-wider text-purple-300 bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 rounded-md">
-                      <Gamepad2 className="w-2.5 h-2.5 text-purple-400" />
-                      {nextTarget.event.game}
-                    </span>
-                  )}
-                </div>
-
-                <h4 className="font-display font-bold text-white text-sm sm:text-base tracking-wide group-hover:text-amber-300 transition-colors truncate">
-                  {nextTarget.event.name}
-                </h4>
-                <p className="text-[10.5px] text-zinc-400 truncate">
-                  {nextTarget.event.orgName} {nextTarget.event.stage ? `· ${nextTarget.event.stage}` : ""}
-                </p>
-              </div>
-            </div>
-
-            {/* Right: Live status or Countdown Timer */}
-            <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06] shrink-0">
-              {nextTarget.isLive ? (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
-                  <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
-                  <span>In Progress</span>
-                </div>
-              ) : (
-                (() => {
-                  const diffMs = Math.max(0, nextTarget.targetDate.getTime() - now.getTime());
-                  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
-                  const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
-                  const seconds = Math.floor((diffMs / 1000) % 60);
-
-                  return (
-                    <div className="flex items-center gap-1 sm:gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-400/80 shrink-0 mr-0.5" />
-
-                      {days > 0 && (
-                        <div className="flex flex-col items-center justify-center liquid-glass-gold px-2 py-0.5 rounded-lg min-w-[34px]">
-                          <span className="font-mono text-xs sm:text-sm font-bold text-amber-300 leading-none">{days}</span>
-                          <span className="text-[7.5px] text-amber-400/80 uppercase font-bold tracking-wider mt-0.5">d</span>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col items-center justify-center liquid-glass-gold px-2 py-0.5 rounded-lg min-w-[34px]">
-                        <span className="font-mono text-xs sm:text-sm font-bold text-amber-300 leading-none">
-                          {String(hours).padStart(2, "0")}
-                        </span>
-                        <span className="text-[7.5px] text-amber-400/80 uppercase font-bold tracking-wider mt-0.5">h</span>
-                      </div>
-
-                      <span className="text-amber-500/50 font-bold text-[10px]">:</span>
-
-                      <div className="flex flex-col items-center justify-center liquid-glass-gold px-2 py-0.5 rounded-lg min-w-[34px]">
-                        <span className="font-mono text-xs sm:text-sm font-bold text-amber-300 leading-none">
-                          {String(minutes).padStart(2, "0")}
-                        </span>
-                        <span className="text-[7.5px] text-amber-400/80 uppercase font-bold tracking-wider mt-0.5">m</span>
-                      </div>
-
-                      <span className="text-amber-500/50 font-bold text-[10px]">:</span>
-
-                      <div className="flex flex-col items-center justify-center liquid-glass-gold px-2 py-0.5 rounded-lg min-w-[34px]">
-                        <span className="font-mono text-xs sm:text-sm font-bold text-amber-400 leading-none">
-                          {String(seconds).padStart(2, "0")}
-                        </span>
-                        <span className="text-[7.5px] text-amber-400 uppercase font-bold tracking-wider mt-0.5">s</span>
-                      </div>
-                    </div>
-                  );
-                })()
-              )}
-
-              <div className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-zinc-400 group-hover:text-amber-400 transition-all">
-                <ChevronRight className="w-3.5 h-3.5" />
-              </div>
+              <h2>{nextTarget.event.name}</h2>
+              <p>{nextTarget.event.orgName}{nextTarget.event.game && <><Gamepad2 />{nextTarget.event.game}</>}</p>
             </div>
           </div>
-        </div>
+          <div className="next-match__timing">
+            {nextTarget.isLive ? <div className="live-callout"><span />In progress</div> : <Countdown target={nextTarget.targetDate} now={now} />}
+            <ArrowUpRight aria-hidden="true" />
+          </div>
+        </button>
+      ) : (
+        <div className="next-match next-match--empty"><div><span className="status-next"><Clock3 />Schedule open</span><h2>No upcoming event yet.</h2><p>Check the full calendar or submit the next match.</p></div></div>
       )}
-    </div>
+    </section>
   );
 };

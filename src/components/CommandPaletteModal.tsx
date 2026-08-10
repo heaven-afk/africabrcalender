@@ -6,7 +6,6 @@ import {
   LayoutGrid,
   CalendarDays,
   Calendar,
-  List,
   Trophy,
   X,
 } from "lucide-react";
@@ -22,10 +21,10 @@ interface CommandPaletteProps {
 }
 
 const VIEWS = [
-  { id: "grid" as ViewMode, label: "Grid", icon: <LayoutGrid className="w-4 h-4" /> },
-  { id: "list" as ViewMode, label: "Calendar", icon: <CalendarDays className="w-4 h-4" /> },
+  { id: "grid" as ViewMode, label: "Year", icon: <LayoutGrid className="w-4 h-4" /> },
+  { id: "list" as ViewMode, label: "Agenda", icon: <CalendarDays className="w-4 h-4" /> },
   { id: "week" as ViewMode, label: "Week", icon: <Calendar className="w-4 h-4" /> },
-  { id: "tournaments" as ViewMode, label: "Tournaments", icon: <Trophy className="w-4 h-4" /> },
+  { id: "tournaments" as ViewMode, label: "Events", icon: <Trophy className="w-4 h-4" /> },
 ];
 
 type ResultItem =
@@ -108,8 +107,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
 
   const catColor = (category: string) => {
     if (category === "ranking") return "text-amber-400";
-    if (category === "tournament") return "text-cyan-400";
-    if (category === "award") return "text-purple-400";
+    if (category === "tournament") return "text-[#b8ff3d]";
+    if (category === "award") return "text-orange-400";
     if (category === "podcast") return "text-rose-400";
     return "text-emerald-400";
   };
@@ -121,7 +120,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
     <div className="cmd-backdrop animate-fadeIn" onClick={onClose}>
       <div className="cmd-box animate-scaleIn" onClick={(e) => e.stopPropagation()}>
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#27272a]">
+        <div className="cmd-search">
           <Search className="w-4 h-4 text-[#52525b] shrink-0" />
           <input
             ref={inputRef}
@@ -141,7 +140,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
         <div ref={listRef} className="max-h-96 overflow-y-auto py-1.5">
           {hasViewResults && (
             <div>
-              <div className="px-4 py-2 text-[9px] font-bold tracking-widest uppercase text-[#3f3f46]">Views</div>
+              <div className="px-4 py-2 text-xs font-bold tracking-wider uppercase text-[#62626a]">Views</div>
               {results.map((item, idx) => {
                 if (item.kind !== "view") return null;
                 return (
@@ -163,7 +162,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
 
           {hasEventResults && (
             <div>
-              <div className="px-4 py-2 text-[9px] font-bold tracking-widest uppercase text-[#3f3f46] mt-1">Events</div>
+              <div className="px-4 py-2 text-xs font-bold tracking-wider uppercase text-[#62626a] mt-1">Events</div>
               {results.map((item, idx) => {
                 if (item.kind !== "event") return null;
                 return (
@@ -182,14 +181,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
                         onError={(e) => { (e.target as HTMLElement).style.display="none"; }}
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded bg-[#1c1c20] flex items-center justify-center text-[9px] font-bold text-[#71717a] shrink-0">
+                      <div className="w-6 h-6 rounded bg-[#1c1c20] flex items-center justify-center text-xs font-bold text-[#71717a] shrink-0">
                         {item.event.orgName.slice(0,2).toUpperCase()}
                       </div>
                     )}
                     <span className="flex-1 text-left text-sm font-medium text-zinc-200 truncate">{item.event.name}</span>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${catColor(item.event.category)}`}>{item.event.category}</span>
-                      {item.event.region && <span className="text-[9px] text-[#52525b]">{item.event.region}</span>}
+                      <span className={`text-xs font-bold uppercase ${catColor(item.event.category)}`}>{item.event.category}</span>
+                      {item.event.region && <span className="text-xs text-[#71717a]">{item.event.region}</span>}
                     </div>
                   </button>
                 );
@@ -203,7 +202,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-[#27272a] flex items-center gap-3 text-[10px] text-[#3f3f46]">
+        <div className="px-4 py-2.5 border-t border-[#27272a] flex items-center gap-3 text-xs text-[#62626a]">
           <span><span className="kbd">↑↓</span> navigate</span>
           <span><span className="kbd">↵</span> select</span>
           <span><span className="kbd">esc</span> close</span>

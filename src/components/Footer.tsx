@@ -1,18 +1,15 @@
 import React from "react";
+import { ArrowUpRight, Radio } from "lucide-react";
 
 export const Footer: React.FC = () => (
-  <footer className="mt-16 py-6 border-t border-[#1a1a1e]">
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[11px] text-[#3f3f46]">
-      <span>
-        Data source: from{" "}
-        <span className="text-[#71717a]">Fabrizo Mayowa</span>
-      </span>
-      <span>
-        Built by{" "}
-        <span className="text-[#e8a33d]">Heaven</span>
-        {" / "}
-        <span className="text-[#e8a33d]">Nova Technologies</span>
-      </span>
+  <footer className="site-footer">
+    <div className="site-footer__inner">
+      <div className="site-footer__brand"><Radio aria-hidden="true" /><span>ESPORTS CALENDAR</span></div>
+      <p>Competitive schedules across games, regions and communities.</p>
+      <div className="site-footer__credits">
+        <span>Schedule data by Fabrizo Mayowa</span>
+        <span>Built by Heaven / Nova Technologies <ArrowUpRight aria-hidden="true" /></span>
+      </div>
     </div>
   </footer>
 );

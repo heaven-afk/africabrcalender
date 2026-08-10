@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveEvent } from "@/lib/kv";
 import { CalendarEvent, EventCategory } from "@/types/event";
+import { normalizeGame, normalizeRegion } from "@/lib/eventCatalog";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export async function POST(request: NextRequest) {
       location,
       recurrence,
       stage,
+      game,
+      description,
+      startTime,
+      endTime,
     } = body;
 
     if (!name?.trim() || !orgName?.trim() || !submitterEmail?.trim() || !startDate || !endDate) {
@@ -40,14 +45,18 @@ export async function POST(request: NextRequest) {
       id: `evt_book_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       name: name.trim(),
       category: eventCategory,
+      game: normalizeGame(game),
+      description: description?.trim() || null,
+      startTime: startTime?.trim() || null,
+      endTime: endTime?.trim() || null,
       stage: stage?.trim() || null,
       startDate,
       endDate,
       orgName: orgName.trim(),
       orgLogoUrl: orgLogoUrl?.trim() || null,
-      region: region?.trim() || null,
+      region: normalizeRegion(region),
       streamLinks: Array.isArray(streamLinks) ? streamLinks.filter((s) => s.url?.trim()) : [],
-      location: location || {},
+      location: { ...(location || {}), ...(description?.trim() ? { note: description.trim() } : {}), ...(startTime?.trim() ? { startTime: startTime.trim() } : {}), ...(endTime?.trim() ? { endTime: endTime.trim() } : {}) },
       recurrence: eventCategory === "scrim" ? recurrence : null,
       status: "pending",
       submitterEmail: submitterEmail.trim(),

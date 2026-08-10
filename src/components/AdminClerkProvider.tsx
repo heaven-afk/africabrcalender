@@ -31,9 +31,9 @@ class AdminClerkErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-zinc-100 items-center justify-center p-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 shadow-xl">
-            <ShieldAlert className="w-8 h-8 text-amber-400" />
+        <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100 items-center justify-center p-4 text-center">
+          <div className="w-16 h-16 rounded-xl bg-[#b8ff3d]/10 border border-[#b8ff3d]/30 flex items-center justify-center mb-4">
+            <ShieldAlert className="w-8 h-8 text-[#c9ff70]" />
           </div>
           <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
             Clerk Authentication Notice
@@ -44,7 +44,7 @@ class AdminClerkErrorBoundary extends Component<
 
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#18181b] border border-[#27272a] text-sm font-semibold text-neutral-300 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#111412] border border-[#222624] text-sm font-semibold text-neutral-300 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Return to Public Calendar
@@ -56,8 +56,9 @@ class AdminClerkErrorBoundary extends Component<
     return (
       <ClerkProvider
         publishableKey={this.props.publishableKey}
-        afterSignInUrl="/admin"
-        afterSignUpUrl="/admin"
+        afterSignOutUrl="/admin"
+        signInFallbackRedirectUrl="/admin"
+        signUpFallbackRedirectUrl="/admin"
         signUpUrl="/admin"
         signInUrl="/admin"
       >

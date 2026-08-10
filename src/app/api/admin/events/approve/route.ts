@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (event.submitterEmail) {
       await sendBookingStatusEmail({
         to: event.submitterEmail,
-        subject: `Your event "${event.name}" on Africa BR Calendar was APPROVED!`,
+        subject: `Your event "${event.name}" on Esports Calendar was approved`,
         eventName: event.name,
         status: "approved",
       });
