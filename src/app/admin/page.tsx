@@ -45,7 +45,7 @@ const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-zin
 /* ─── Category colours ───────────────────────────────────────────────────── */
 const CAT_META: Record<EventCategory, { label: string; ring: string; bg: string; text: string }> = {
   ranking:    { label: "Ranking",    ring: "border-amber-500",  bg: "bg-amber-500/10",  text: "text-amber-300" },
-  tournament: { label: "Tournament", ring: "border-[#b8ff3d]", bg: "bg-[#b8ff3d]/10", text: "text-[#cfff7c]" },
+  tournament: { label: "Tournament", ring: "border-[#4F7CFF]", bg: "bg-[#4F7CFF]/10", text: "text-[#4F7CFF]" },
   scrim:      { label: "Scrim",      ring: "border-emerald-500",bg: "bg-emerald-500/10",text: "text-emerald-300" },
   award:      { label: "Award",      ring: "border-orange-500", bg: "bg-orange-500/10", text: "text-orange-300" },
   podcast:    { label: "Podcast",    ring: "border-rose-500",   bg: "bg-rose-500/10",   text: "text-rose-300" },
@@ -361,7 +361,7 @@ function AdminDashboard() {
           <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black font-extrabold text-xs sm:text-sm shadow-lg hover:scale-[1.02] transition-transform self-start sm:self-auto"
-            style={{ background: "#b8ff3d" }}
+            style={{ background: "#4F7CFF" }}
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             New Event
@@ -374,7 +374,7 @@ function AdminDashboard() {
             onClick={() => setActiveTab("published")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === "published"
-                ? "bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/40"
+                ? "bg-[#4F7CFF]/10 text-[#4F7CFF] border border-[#4F7CFF]/40"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
@@ -386,14 +386,14 @@ function AdminDashboard() {
             onClick={() => setActiveTab("pending")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
               activeTab === "pending"
-                ? "bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/40"
+                ? "bg-[#4F7CFF]/10 text-[#4F7CFF] border border-[#4F7CFF]/40"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            <Clock className="w-3.5 h-3.5 text-[#c9ff70]" />
+            <Clock className="w-3.5 h-3.5 text-[#4F7CFF]" />
             Pending Bookings
             {pendingEvents.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#b8ff3d] text-white">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#4F7CFF] text-white">
                 {pendingEvents.length}
               </span>
             )}
@@ -403,7 +403,7 @@ function AdminDashboard() {
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center p-24 gap-3">
-            <Loader2 className="w-5 h-5 text-[#c9ff70] animate-spin" />
+            <Loader2 className="w-5 h-5 text-[#4F7CFF] animate-spin" />
             <span className="text-sm text-[#52525b]">Loading events…</span>
           </div>
         ) : activeTab === "pending" ? (
@@ -417,13 +417,13 @@ function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {pendingEvents.map((evt) => (
-                <div key={evt.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-[#0a0c0b] border border-[#b8ff3d]/25 hover:border-[#b8ff3d]/55 transition-colors">
+                <div key={evt.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-[#0a0c0b] border border-[#4F7CFF]/25 hover:border-[#4F7CFF]/55 transition-colors">
                   <div className="flex items-start gap-3.5 min-w-0">
                     <CatBadge cat={evt.category} />
                     <div className="min-w-0">
                       <div className="font-display font-bold text-white text-base truncate flex items-center gap-2">
                         {evt.name}
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#b8ff3d]/10 text-[#c9ff70] border border-[#b8ff3d]/25">
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#4F7CFF]/10 text-[#4F7CFF] border border-[#4F7CFF]/25">
                           PENDING APPROVAL
                         </span>
                       </div>
@@ -434,13 +434,13 @@ function AdminDashboard() {
                         {evt.region && (
                           <>
                             <span>·</span>
-                            <span className="text-[#c9ff70]">{evt.region}</span>
+                            <span className="text-[#4F7CFF]">{evt.region}</span>
                           </>
                         )}
                         {evt.submitterEmail && (
                           <>
                             <span>·</span>
-                            <span className="text-[#b8ff3d] font-mono">Submitter: {evt.submitterEmail}</span>
+                            <span className="text-[#4F7CFF] font-mono">Submitter: {evt.submitterEmail}</span>
                           </>
                         )}
                       </div>
@@ -476,7 +476,7 @@ function AdminDashboard() {
             <h3 className="font-display font-bold text-white text-base">No Events Added Yet</h3>
             <p className="text-xs text-[#52525b] mt-1 mb-4">Click &ldquo;New Event&rdquo; to create your first event entry.</p>
             <button onClick={handleOpenAdd} className="px-4 py-2 rounded-xl text-xs font-bold text-black"
-              style={{ background: "#b8ff3d" }}>
+              style={{ background: "#4F7CFF" }}>
               Create Event
             </button>
           </div>
@@ -496,7 +496,7 @@ function AdminDashboard() {
                       {evt.region && (
                         <>
                           <span>·</span>
-                          <span className="text-[#c9ff70]">{evt.region}</span>
+                          <span className="text-[#4F7CFF]">{evt.region}</span>
                         </>
                       )}
                     </div>
@@ -574,8 +574,8 @@ function AdminDashboard() {
                 />
               </div>
 
-              <button type="button" onClick={()=>setFormDailyRecurring(value=>!value)} className={`w-full p-3.5 flex items-center gap-3 rounded-xl border text-left transition-colors ${formDailyRecurring ? "border-[#6f9931] bg-[#b8ff3d]/[.07]" : "border-[#292e2a] bg-[#0d100e]"}`}>
-                <span className="w-9 h-9 grid place-items-center rounded-lg bg-[#171b18]"><Repeat2 className="w-4 h-4 text-[#b8ff3d]" /></span><span className="min-w-0 flex-1"><strong className="block text-sm text-white">Runs every day</strong><small className="block mt-0.5 text-xs text-zinc-500">{formDailyRecurring ? "Daily recurrence enabled — dates are not required" : "For daily scrims and repeating sessions"}</small></span><span className={`w-9 h-5 p-0.5 rounded-full transition-colors ${formDailyRecurring ? "bg-[#b8ff3d]" : "bg-[#282d29]"}`}><i className={`block w-4 h-4 rounded-full bg-white transition-transform ${formDailyRecurring ? "translate-x-4" : ""}`} /></span>
+              <button type="button" onClick={()=>setFormDailyRecurring(value=>!value)} className={`w-full p-3.5 flex items-center gap-3 rounded-xl border text-left transition-colors ${formDailyRecurring ? "border-[#365cc7] bg-[#4F7CFF]/[.07]" : "border-[#292e2a] bg-[#0d100e]"}`}>
+                <span className="w-9 h-9 grid place-items-center rounded-lg bg-[#171b18]"><Repeat2 className="w-4 h-4 text-[#4F7CFF]" /></span><span className="min-w-0 flex-1"><strong className="block text-sm text-white">Runs every day</strong><small className="block mt-0.5 text-xs text-zinc-500">{formDailyRecurring ? "Daily recurrence enabled — dates are not required" : "For daily scrims and repeating sessions"}</small></span><span className={`w-9 h-5 p-0.5 rounded-full transition-colors ${formDailyRecurring ? "bg-[#4F7CFF]" : "bg-[#282d29]"}`}><i className={`block w-4 h-4 rounded-full bg-white transition-transform ${formDailyRecurring ? "translate-x-4" : ""}`} /></span>
               </button>
 
               {!formDailyRecurring&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -607,7 +607,7 @@ function AdminDashboard() {
 
               {formCategory === "scrim" && !formDailyRecurring && (
                 <div className="p-4 rounded-xl bg-[#070908] border border-[#222624] space-y-3">
-                  <div className="text-xs font-bold text-[#c9ff70] uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-[#4F7CFF] uppercase tracking-wider flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" /> Scrim Schedule Recurrence
                   </div>
                   <div>
@@ -617,7 +617,7 @@ function AdminDashboard() {
                         const checked = formDaysOfWeek.includes(d.val);
                         return (
                           <button key={d.val} type="button" onClick={() => setFormDaysOfWeek((prev) => checked ? prev.filter((x) => x !== d.val) : [...prev, d.val])}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${checked ? "bg-[#b8ff3d] text-white" : "bg-[#111412] border border-[#222624] text-[#69736c]"}`}>
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${checked ? "bg-[#4F7CFF] text-white" : "bg-[#111412] border border-[#222624] text-[#69736c]"}`}>
                             {d.label}
                           </button>
                         );
@@ -651,7 +651,7 @@ function AdminDashboard() {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[#1c1c20] border border-[#27272a] text-[#a1a1aa] text-sm font-semibold hover:text-white transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSaving} className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-extrabold transition-colors disabled:opacity-50" style={{ background: "#b8ff3d" }}>
+                <button type="submit" disabled={isSaving} className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-extrabold transition-colors disabled:opacity-50" style={{ background: "#4F7CFF" }}>
                   {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingEvent ? "Save Changes" : "Publish Event"}
                 </button>
@@ -672,7 +672,7 @@ export default function AdminPage() {
   if (!mounted) {
     return (
       <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100 items-center justify-center p-24 gap-3">
-        <Loader2 className="w-6 h-6 text-[#c9ff70] animate-spin" />
+        <Loader2 className="w-6 h-6 text-[#4F7CFF] animate-spin" />
         <span className="text-sm text-[#52525b]">Loading Admin Portal…</span>
       </div>
     );
@@ -682,14 +682,14 @@ export default function AdminPage() {
     <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[#222624] bg-[#050606]/95 backdrop-blur-xl">
-        <div className="h-[2px] w-full bg-[#b8ff3d]" />
+        <div className="h-[2px] w-full bg-[#4F7CFF]" />
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-[#71717a] hover:text-white transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to Calendar
           </Link>
           <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-[#c9ff70]" />
+            <Lock className="w-3.5 h-3.5 text-[#4F7CFF]" />
             <span className="font-display font-bold text-white text-xs uppercase tracking-wider">Admin Portal</span>
           </div>
           <ClerkHeaderAuth />
@@ -701,8 +701,8 @@ export default function AdminPage() {
         <Show when="signed-out">
           <div className="flex flex-col items-center justify-center py-12 px-4">
             <div className="mb-6 text-center max-w-md">
-              <div className="w-12 h-12 rounded-xl bg-[#b8ff3d]/10 border border-[#b8ff3d]/30 flex items-center justify-center mx-auto mb-3">
-                <Lock className="w-6 h-6 text-[#c9ff70]" />
+              <div className="w-12 h-12 rounded-xl bg-[#4F7CFF]/10 border border-[#4F7CFF]/30 flex items-center justify-center mx-auto mb-3">
+                <Lock className="w-6 h-6 text-[#4F7CFF]" />
               </div>
               <h2 className="font-display font-bold text-white text-2xl tracking-wide">
                 Admin Portal Sign In

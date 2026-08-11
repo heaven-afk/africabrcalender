@@ -3,13 +3,13 @@ import { CalendarEvent } from "@/types/event";
 function getCategoryColor(category: string): number {
   switch (category) {
     case "ranking":
-      return 0xe8a33d; // Amber/Gold #E8A33D
+      return 0x4F7CFF; // Brand blue #4F7CFF
     case "tournament":
       return 0x06b6d4; // Cyan #06B6D4
     case "scrim":
       return 0x10b981; // Emerald #10B981
     default:
-      return 0xe8a33d;
+      return 0x4F7CFF;
   }
 }
 

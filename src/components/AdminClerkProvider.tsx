@@ -32,8 +32,8 @@ class AdminClerkErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex flex-col bg-[#050606] text-zinc-100 items-center justify-center p-4 text-center">
-          <div className="w-16 h-16 rounded-xl bg-[#b8ff3d]/10 border border-[#b8ff3d]/30 flex items-center justify-center mb-4">
-            <ShieldAlert className="w-8 h-8 text-[#c9ff70]" />
+          <div className="w-16 h-16 rounded-xl bg-[#4F7CFF]/10 border border-[#4F7CFF]/30 flex items-center justify-center mb-4">
+            <ShieldAlert className="w-8 h-8 text-[#4F7CFF]" />
           </div>
           <h2 className="font-display font-bold text-white text-2xl tracking-wide mb-2">
             Clerk Authentication Notice

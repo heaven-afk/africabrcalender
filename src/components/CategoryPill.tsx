@@ -16,7 +16,7 @@ export const CategoryPill: React.FC<CategoryPillProps> = ({ category, size = "md
     },
     tournament: {
       label: "TOURNAMENT",
-      className: "border-[#b8ff3d]/60 bg-transparent text-[#cfff7c]",
+      className: "border-[#4F7CFF]/60 bg-transparent text-[#4F7CFF]",
     },
     scrim: {
       label: "SCRIM",

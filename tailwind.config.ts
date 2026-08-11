@@ -17,10 +17,10 @@ const config: Config = {
           border: "#27272a",
         },
         gold: {
-          DEFAULT: "#e8a33d",
-          dim: "rgba(232,163,61,0.15)",
-          500: "#e8a33d",
-          600: "#c9821f",
+          DEFAULT: "#4F7CFF",
+          dim: "rgba(79,124,255,0.15)",
+          500: "#4F7CFF",
+          600: "#3d63d6",
         },
         zinc: {
           850: "#1e1e22",
