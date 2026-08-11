@@ -9,11 +9,13 @@ import { format, parseISO } from "date-fns";
 import { CalendarEvent } from "@/types/event";
 import { CategoryPill } from "./CategoryPill";
 import { OrgLogo } from "./OrgLogo";
+import { getStreamPlatform } from "@/lib/eventCatalog";
 
 interface EventModalProps { event: CalendarEvent | null; onClose: () => void; }
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function formatDateRange(event: CalendarEvent) {
+  if (event.recurrence?.daysOfWeek?.length === 7 && event.endDate === "2099-12-31") return "Every day";
   try {
     const start = format(parseISO(event.startDate), "MMM d, yyyy");
     const end = format(parseISO(event.endDate), "MMM d, yyyy");
@@ -31,6 +33,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
 
   if (!event) return null;
   const primaryLink = event.streamLinks?.[0]?.url || event.location?.websiteUrl;
+  const timezone = event.recurrence?.timezone || event.location?.timezone;
 
   return (
     <div className="drawer-backdrop animate-fadeIn" onMouseDown={onClose}>
@@ -50,12 +53,12 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
             </div>
           </div>
 
-          <div className="event-meta-grid">
-            <div><CalendarDays /><span>Schedule<strong>{formatDateRange(event)}</strong></span></div>
-            <div><Building2 /><span>Organizer<strong>{event.orgName}</strong></span></div>
-            {event.game && <div><Gamepad2 /><span>Game<strong>{event.game}</strong></span></div>}
-            {event.region && <div><MapPin /><span>Region<strong>{event.region}</strong></span></div>}
-            {(event.startTime || event.recurrence?.startTime) && <div><Clock3 /><span>Time<strong>{event.startTime || event.recurrence?.startTime}{(event.endTime || event.recurrence?.endTime) ? `–${event.endTime || event.recurrence?.endTime}` : ""}</strong></span></div>}
+          <div className="event-facts">
+            <div><span><CalendarDays />Schedule</span><strong>{formatDateRange(event)}</strong></div>
+            {(event.startTime || event.recurrence?.startTime) && <div><span><Clock3 />Time</span><strong>{event.startTime || event.recurrence?.startTime}{(event.endTime || event.recurrence?.endTime) ? `–${event.endTime || event.recurrence?.endTime}` : ""}{timezone ? ` · ${timezone}` : ""}</strong></div>}
+            <div><span><Building2 />Organizer</span><strong>{event.orgName}</strong></div>
+            {event.game && <div><span><Gamepad2 />Game</span><strong>{event.game}</strong></div>}
+            {event.region && <div><span><MapPin />Region</span><strong>{event.region}</strong></div>}
           </div>
 
           {(event.description || event.location?.note) && (
@@ -65,7 +68,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
             </section>
           )}
 
-          {event.category === "scrim" && event.recurrence && (
+          {event.recurrence && (
             <section className="drawer-section">
               <div className="drawer-section__title"><Clock3 /><span>Recurring schedule</span></div>
               <p>{event.recurrence.daysOfWeek.map((day) => DAYS[day]).join(", ")}</p>
@@ -77,11 +80,11 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
             <section className="drawer-section">
               <div className="drawer-section__title"><Tv /><span>Broadcasts</span></div>
               <div className="drawer-links">
-                {event.streamLinks.map((stream, index) => (
+                {event.streamLinks.map((stream, index) => { const platform = getStreamPlatform(stream.label, stream.url); return (
                   <a key={index} href={stream.url} target="_blank" rel="noopener noreferrer">
-                    <span>{stream.label || "Watch broadcast"}</span><ExternalLink />
+                    <span>{platform.logo ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img className="stream-mark" src={platform.logo} alt="" /></> : <Tv />}{platform.label}</span><ExternalLink />
                   </a>
-                ))}
+                ); })}
               </div>
             </section>
           )}

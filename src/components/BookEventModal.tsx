@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, Award, Building2, CalendarDays, CheckCircle2, ChevronDown, Clock3, Crosshair,
   Gamepad2, Globe2, Layers3, Loader2, Mail, MapPin, MessageSquare,
-  Medal, Mic2, Plus, Radio, Send, ShieldCheck, Tag, Trash2, Trophy, Type, X,
+  Medal, Mic2, Plus, Radio, Repeat2, Send, ShieldCheck, Tag, Trash2, Trophy, Type, X,
 } from "lucide-react";
 import { EventCategory, StreamLink } from "@/types/event";
 import { LogoUploadInput } from "./LogoUploadInput";
 import { DatePicker } from "./DatePicker";
 import { SearchableSelect } from "./SearchableSelect";
-import { GAME_OPTIONS, REGION_OPTIONS } from "@/lib/eventCatalog";
+import { GAME_OPTIONS, REGION_OPTIONS, STREAM_OPTIONS, TIMEZONE_OPTIONS } from "@/lib/eventCatalog";
 import { TimePicker } from "./TimePicker";
 
 interface BookEventModalProps {
@@ -44,12 +44,15 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
   const [endDate, setEndDate] = useState(today);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [dailyRecurring, setDailyRecurring] = useState(false);
   const [region, setRegion] = useState("");
-  const [streamLinks, setStreamLinks] = useState<StreamLink[]>([{ label: "Main stream", url: "" }]);
+  const [streamLinks, setStreamLinks] = useState<StreamLink[]>([{ label: "YouTube", url: "" }]);
   const [discordUrl, setDiscordUrl] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const timezoneOptions = useMemo(() => TIMEZONE_OPTIONS.some((item) => item.value === timezone) ? TIMEZONE_OPTIONS : [{ value: timezone, label: timezone, description: "Local timezone", icon: Clock3 }, ...TIMEZONE_OPTIONS], [timezone]);
 
   useEffect(() => {
     const closeCategory = (event: MouseEvent) => {
@@ -66,8 +69,8 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!name.trim() || !orgName.trim() || !submitterEmail.trim() || !startDate || !endDate) {
-      setError("Add the event name, organization, contact email and dates to continue.");
+    if (!name.trim() || !orgName.trim() || !submitterEmail.trim() || (!dailyRecurring && (!startDate || !endDate)) || (dailyRecurring && !startTime)) {
+      setError(dailyRecurring ? "Add the event name, organization, contact email and a start time." : "Add the event name, organization, contact email and dates to continue.");
       return;
     }
     setSubmitting(true);
@@ -79,12 +82,14 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
           name: name.trim(), category, game: game.trim() || undefined, description: description.trim() || undefined,
           stage: stage.trim() || undefined, orgName: orgName.trim(),
           orgLogoUrl: orgLogoUrl.trim() || undefined,
-          submitterEmail: submitterEmail.trim(), startDate, endDate, startTime: startTime || undefined, endTime: endTime || undefined,
+          submitterEmail: submitterEmail.trim(), startDate: dailyRecurring ? today : startDate, endDate: dailyRecurring ? "2099-12-31" : endDate, startTime: startTime || undefined, endTime: endTime || undefined,
+          recurrence: dailyRecurring ? { daysOfWeek: [0,1,2,3,4,5,6], startTime, endTime: endTime || "23:59", timezone, exceptions: [] } : undefined,
           region: region.trim() || undefined,
           streamLinks: streamLinks.filter((stream) => stream.url.trim()),
           location: {
             discordUrl: discordUrl.trim() || undefined,
             websiteUrl: websiteUrl.trim() || undefined,
+            timezone,
           },
         }),
       });
@@ -127,7 +132,7 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
                   <div className="booking-field"><span><Gamepad2 />Game</span><SearchableSelect value={game} onChange={setGame} items={GAME_OPTIONS} placeholder="Choose a game" searchPlaceholder="Search popular games…" emptyLabel="No game found" /></div>
                   <div className="booking-field"><span><Tag />Category</span><div className="booking-category" ref={categoryRef}>{(() => { const selected = categories.find((item) => item.value === category) || categories[0]; const SelectedIcon = selected.icon; return <><button type="button" className="booking-category__trigger" onClick={() => setCategoryOpen((current) => !current)} aria-haspopup="listbox" aria-expanded={categoryOpen}><span><SelectedIcon /><span><strong>{selected.label}</strong><small>{selected.description}</small></span></span><ChevronDown /></button>{categoryOpen && <div className="booking-category__menu" role="listbox">{categories.map((item) => { const Icon = item.icon; return <button type="button" role="option" aria-selected={item.value === category} className={item.value === category ? "is-selected" : ""} key={item.value} onClick={() => { setCategory(item.value); setCategoryOpen(false); }}><Icon /><span><strong>{item.label}</strong><small>{item.description}</small></span>{item.value === category && <CheckCircle2 />}</button>; })}</div>}</>; })()}</div></div>
                   <label className="booking-field booking-field--wide"><span><Layers3 />Stage or qualifier</span><input value={stage} onChange={(e) => setStage(e.target.value)} placeholder="Optional — e.g. Grand finals" /></label>
-                  <label className="booking-field booking-field--wide booking-field--textarea"><span><MessageSquare />Description</span><textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={800} placeholder="Tell players what the event is about, who can enter, and what makes it worth following." /><small className="booking-field__count">{description.length}/800</small></label>
+                  <label className="booking-field booking-field--wide booking-field--textarea"><span><MessageSquare />Description</span><textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} placeholder="Tell players what the event is about, who can enter, and what makes it worth following." /><small className="booking-field__count">{description.length}/2000</small></label>
                 </div>
               </section>
 
@@ -136,11 +141,13 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
                 <div className="booking-fields">
                   <label className="booking-field"><span><Building2 />Organization <b>Required</b></span><input required value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="Organization name" /></label>
                   <label className="booking-field"><span><Mail />Contact email <b>Required</b></span><input type="email" required value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} placeholder="organizer@example.com" /></label>
-                  <div className="booking-field"><span><CalendarDays />Start date <b>Required</b></span><DatePicker value={startDate} onChange={setStartDate} icon={CalendarDays} /></div>
-                  <div className="booking-field"><span><Clock3 />End date <b>Required</b></span><DatePicker value={endDate} onChange={setEndDate} min={startDate} icon={Clock3} /></div>
-                  <div className="booking-field"><span><Clock3 />Start time</span><TimePicker value={startTime} onChange={setStartTime} placeholder="Choose start time" /></div>
-                  <div className="booking-field"><span><Clock3 />End time <small>Optional</small></span><TimePicker value={endTime} onChange={setEndTime} placeholder="No end time" optional /></div>
-                  <div className="booking-field booking-field--wide"><span><MapPin />Region</span><SearchableSelect value={region} onChange={setRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" emptyLabel="No region found" /></div>
+                  <button type="button" className={`booking-recurrence booking-field--wide ${dailyRecurring ? "is-active" : ""}`} onClick={()=>setDailyRecurring(value=>!value)} aria-pressed={dailyRecurring}><span><Repeat2 /></span><span><strong>Runs every day</strong><small>{dailyRecurring ? "Daily recurrence enabled — no dates needed" : "Use for daily scrims and repeating sessions"}</small></span><i /></button>
+                  {!dailyRecurring&&<><div className="booking-field"><span><CalendarDays />Start date <b>Required</b></span><DatePicker value={startDate} onChange={setStartDate} icon={CalendarDays} /></div>
+                  <div className="booking-field"><span><Clock3 />End date <b>Required</b></span><DatePicker value={endDate} onChange={setEndDate} min={startDate} icon={Clock3} /></div></>}
+                  <div className="booking-field"><span><Clock3 />Start time {dailyRecurring&&<b>Required</b>}</span><TimePicker value={startTime} onChange={setStartTime} placeholder="Choose start time" /></div>
+                  <div className="booking-field"><span><Clock3 />End time <small>Optional</small></span><TimePicker value={endTime} onChange={setEndTime} placeholder="No end time" optional align="right" /></div>
+                  <div className="booking-field"><span><Clock3 />Timezone</span><SearchableSelect value={timezone} onChange={setTimezone} items={timezoneOptions} placeholder="Choose a timezone" searchPlaceholder="Search timezones…" emptyLabel="No timezone found" /></div>
+                  <div className="booking-field"><span><MapPin />Region</span><SearchableSelect value={region} onChange={setRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" emptyLabel="No region found" align="right" /></div>
                   <div className="booking-field booking-field--wide"><LogoUploadInput label="Organization logo" value={orgLogoUrl} onChange={setOrgLogoUrl} /></div>
                 </div>
               </section>
@@ -151,10 +158,10 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
                   <label className="booking-field"><span><MessageSquare />Discord invite</span><input type="url" value={discordUrl} onChange={(e) => setDiscordUrl(e.target.value)} placeholder="https://discord.gg/…" /></label>
                   <label className="booking-field"><span><Globe2 />Event website</span><input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://…" /></label>
                   <div className="booking-streams booking-field--wide">
-                    <div className="booking-streams__head"><span><Radio />Stream links</span><button type="button" onClick={() => setStreamLinks((current) => [...current, { label: "Live stream", url: "" }])}><Plus />Add stream</button></div>
+                    <div className="booking-streams__head"><span><Radio />Stream links</span><button type="button" onClick={() => setStreamLinks((current) => [...current, { label: "YouTube", url: "" }])}><Plus />Add stream</button></div>
                     {streamLinks.map((stream, index) => <div className="booking-stream" key={index}>
-                      <input value={stream.label || ""} onChange={(e) => updateStream(index, "label", e.target.value)} placeholder="Stream label" />
-                      <input type="url" value={stream.url} onChange={(e) => updateStream(index, "url", e.target.value)} placeholder="https://twitch.tv/…" />
+                      <SearchableSelect value={stream.label || ""} onChange={(value) => updateStream(index, "label", value)} items={STREAM_OPTIONS} placeholder="Platform" searchPlaceholder="Search platforms…" />
+                      <input type="url" value={stream.url} onChange={(e) => updateStream(index, "url", e.target.value)} placeholder="Paste the full stream URL" />
                       {streamLinks.length > 1 && <button type="button" onClick={() => setStreamLinks((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Remove stream"><Trash2 /></button>}
                     </div>)}
                   </div>

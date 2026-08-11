@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Show, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
   Plus, Edit2, Trash2, Calendar, ArrowLeft,
-  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, ShieldAlert, Lock, LogOut, MessageSquare,
+  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Repeat2, ShieldAlert, Lock, LogOut, MessageSquare,
 } from "lucide-react";
 import { CalendarEvent, EventCategory, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
 import { LogoUploadInput } from "@/components/LogoUploadInput";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { DatePicker } from "@/components/DatePicker";
-import { GAME_OPTIONS, REGION_OPTIONS } from "@/lib/eventCatalog";
+import { GAME_OPTIONS, REGION_OPTIONS, STREAM_OPTIONS, TIMEZONE_OPTIONS, getStreamPlatform } from "@/lib/eventCatalog";
 import { TimePicker } from "@/components/TimePicker";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
@@ -134,9 +134,11 @@ function AdminDashboard() {
   const [formDaysOfWeek, setFormDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [formStartTime, setFormStartTime] = useState("19:00");
   const [formEndTime, setFormEndTime] = useState("21:00");
-  const [formTimezone, setFormTimezone] = useState("UTC");
+  const [formDailyRecurring, setFormDailyRecurring] = useState(false);
+  const [formTimezone, setFormTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
   const [formExceptions, setFormExceptions] = useState("");
-  const [formStreamLinks, setFormStreamLinks] = useState<StreamLink[]>([{ label: "Main Stream", url: "" }]);
+  const timezoneOptions = useMemo(() => TIMEZONE_OPTIONS.some((item) => item.value === formTimezone) ? TIMEZONE_OPTIONS : [{ value: formTimezone, label: formTimezone, description: "Local timezone", icon: Clock }, ...TIMEZONE_OPTIONS], [formTimezone]);
+  const [formStreamLinks, setFormStreamLinks] = useState<StreamLink[]>([{ label: "YouTube", url: "" }]);
   const [formDiscordUrl, setFormDiscordUrl] = useState("");
   const [formWebsiteUrl, setFormWebsiteUrl] = useState("");
 
@@ -215,8 +217,9 @@ function AdminDashboard() {
     setFormName(""); setFormCategory("tournament"); setFormGame(""); setFormDescription(""); setFormStage("");
     setFormStartDate(today); setFormEndDate(today); setFormOrgName("");
     setFormOrgLogoUrl(""); setFormRegion(""); setFormDaysOfWeek([1,2,3,4,5]);
-    setFormStartTime("19:00"); setFormEndTime("21:00"); setFormTimezone("UTC");
-    setFormExceptions(""); setFormStreamLinks([{ label: "Main Stream", url: "" }]);
+    setFormStartTime("19:00"); setFormEndTime("21:00"); setFormTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+    setFormDailyRecurring(false);
+    setFormExceptions(""); setFormStreamLinks([{ label: "YouTube", url: "" }]);
     setFormDiscordUrl(""); setFormWebsiteUrl("");
   };
 
@@ -238,20 +241,21 @@ function AdminDashboard() {
     setFormOrgName(evt.orgName || "");
     setFormOrgLogoUrl(evt.orgLogoUrl || "");
     setFormRegion(evt.region || "");
+    setFormDailyRecurring(Boolean(evt.recurrence && evt.recurrence.daysOfWeek?.length === 7 && evt.endDate === "2099-12-31"));
     if (evt.recurrence) {
       setFormDaysOfWeek(evt.recurrence.daysOfWeek || [1,2,3,4,5]);
       setFormStartTime(evt.recurrence.startTime || "19:00");
       setFormEndTime(evt.recurrence.endTime || "21:00");
-      setFormTimezone(evt.recurrence.timezone || "UTC");
+      setFormTimezone(evt.recurrence.timezone || evt.location?.timezone || "UTC");
       setFormExceptions((evt.recurrence.exceptions || []).join(", "));
     } else {
       setFormDaysOfWeek([1,2,3,4,5]);
       setFormStartTime(evt.startTime || "");
       setFormEndTime(evt.endTime || "");
-      setFormTimezone("UTC");
+      setFormTimezone(evt.location?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       setFormExceptions("");
     }
-    setFormStreamLinks(evt.streamLinks?.length ? evt.streamLinks : [{ label: "Main Stream", url: "" }]);
+    setFormStreamLinks(evt.streamLinks?.length ? evt.streamLinks.map((stream) => ({ ...stream, label: getStreamPlatform(stream.label, stream.url).value })) : [{ label: "YouTube", url: "" }]);
     setFormDiscordUrl(evt.location?.discordUrl || "");
     setFormWebsiteUrl(evt.location?.websiteUrl || "");
     setIsModalOpen(true);
@@ -260,8 +264,8 @@ function AdminDashboard() {
   /* ─── Submit ────────────────────────────────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim() || !formOrgName.trim() || !formStartDate || !formEndDate) {
-      showToast("error", "Event name, Org name, and Date range are required.");
+    if (!formName.trim() || !formOrgName.trim() || (!formDailyRecurring && (!formStartDate || !formEndDate)) || (formDailyRecurring && !formStartTime)) {
+      showToast("error", formDailyRecurring ? "Event name, Org name, and start time are required." : "Event name, Org name, and Date range are required.");
       return;
     }
 
@@ -276,8 +280,8 @@ function AdminDashboard() {
         startTime: formStartTime || null,
         endTime: formEndTime || null,
         stage: formStage.trim() || null,
-        startDate: formStartDate,
-        endDate: formEndDate,
+        startDate: formDailyRecurring ? new Date().toISOString().slice(0,10) : formStartDate,
+        endDate: formDailyRecurring ? "2099-12-31" : formEndDate,
         orgName: formOrgName.trim(),
         orgLogoUrl: formOrgLogoUrl.trim() || null,
         region: formRegion.trim() || null,
@@ -287,11 +291,12 @@ function AdminDashboard() {
           discordUrl: formDiscordUrl.trim() || undefined,
           websiteUrl: formWebsiteUrl.trim() || undefined,
           note: formDescription.trim() || undefined,
+          timezone: formTimezone,
         },
-        recurrence: formCategory === "scrim" ? {
-          daysOfWeek: formDaysOfWeek,
+        recurrence: formDailyRecurring || formCategory === "scrim" ? {
+          daysOfWeek: formDailyRecurring ? [0,1,2,3,4,5,6] : formDaysOfWeek,
           startTime: formStartTime,
-          endTime: formEndTime,
+          endTime: formEndTime || "23:59",
           timezone: formTimezone,
           exceptions: formExceptions.split(",").map((s) => s.trim()).filter(Boolean),
         } : null,
@@ -522,18 +527,15 @@ function AdminDashboard() {
 
       {/* Edit / Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn" onClick={() => setIsModalOpen(false)}>
-          <div className="match-dialog relative w-full max-w-2xl overflow-hidden max-h-[92vh] flex flex-col animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1e]">
-              <h3 className="font-display font-bold text-white text-lg">
-                {editingEvent ? "Edit Event" : "Create New Event"}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-[#52525b] hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="drawer-backdrop admin-editor-backdrop" onClick={() => setIsModalOpen(false)}>
+          <aside className="submit-drawer booking-drawer admin-editor-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-editor-title">
+            <header className="booking-header">
+              <div className="booking-header__mark"><Calendar /></div>
+              <div><span>Calendar control</span><h2 id="admin-editor-title">{editingEvent ? "Edit event" : "Create event"}</h2><p>The same listing fields and schedule controls used publicly.</p></div>
+              <button onClick={() => setIsModalOpen(false)} aria-label="Close event editor"><X /></button>
+            </header>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="admin-editor-form flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Event Name *</label>
@@ -557,7 +559,7 @@ function AdminDashboard() {
 
               <div>
                 <label className={labelCls}>Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} maxLength={800} placeholder="What players and viewers should know about this event" className={`${fieldCls} min-h-24 resize-y`} />
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} maxLength={2000} placeholder="What players and viewers should know about this event" className={`${fieldCls} min-h-24 resize-y`} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -572,27 +574,38 @@ function AdminDashboard() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
+              <button type="button" onClick={()=>setFormDailyRecurring(value=>!value)} className={`w-full p-3.5 flex items-center gap-3 rounded-xl border text-left transition-colors ${formDailyRecurring ? "border-[#6f9931] bg-[#b8ff3d]/[.07]" : "border-[#292e2a] bg-[#0d100e]"}`}>
+                <span className="w-9 h-9 grid place-items-center rounded-lg bg-[#171b18]"><Repeat2 className="w-4 h-4 text-[#b8ff3d]" /></span><span className="min-w-0 flex-1"><strong className="block text-sm text-white">Runs every day</strong><small className="block mt-0.5 text-xs text-zinc-500">{formDailyRecurring ? "Daily recurrence enabled — dates are not required" : "For daily scrims and repeating sessions"}</small></span><span className={`w-9 h-5 p-0.5 rounded-full transition-colors ${formDailyRecurring ? "bg-[#b8ff3d]" : "bg-[#282d29]"}`}><i className={`block w-4 h-4 rounded-full bg-white transition-transform ${formDailyRecurring ? "translate-x-4" : ""}`} /></span>
+              </button>
+
+              {!formDailyRecurring&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {!formDailyRecurring&&<div>
                   <label className={labelCls}>Start Date *</label>
                   <DatePicker value={formStartDate} onChange={setFormStartDate} />
-                </div>
-                <div>
+                </div>}
+                {!formDailyRecurring&&<div>
                   <label className={labelCls}>End Date *</label>
                   <DatePicker value={formEndDate} onChange={setFormEndDate} min={formStartDate} />
-                </div>
+                </div>}
+              </div>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Region</label>
                   <SearchableSelect value={formRegion} onChange={setFormRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" />
+                </div>
+                <div>
+                  <label className={labelCls}>Timezone</label>
+                  <SearchableSelect value={formTimezone} onChange={setFormTimezone} items={timezoneOptions} placeholder="Choose a timezone" searchPlaceholder="Search timezones…" align="right" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><label className={labelCls}>Start Time</label><TimePicker value={formStartTime} onChange={setFormStartTime} placeholder="Choose start time" /></div>
-                <div><label className={labelCls}>End Time (optional)</label><TimePicker value={formEndTime} onChange={setFormEndTime} placeholder="No end time" optional /></div>
+                <div><label className={labelCls}>End Time (optional)</label><TimePicker value={formEndTime} onChange={setFormEndTime} placeholder="No end time" optional align="right" /></div>
               </div>
 
-              {formCategory === "scrim" && (
+              {formCategory === "scrim" && !formDailyRecurring && (
                 <div className="p-4 rounded-xl bg-[#070908] border border-[#222624] space-y-3">
                   <div className="text-xs font-bold text-[#c9ff70] uppercase tracking-wider flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" /> Scrim Schedule Recurrence
@@ -613,6 +626,15 @@ function AdminDashboard() {
                   </div>
                 </div>
               )}
+
+              <div className="booking-streams">
+                <div className="booking-streams__head"><span>Stream links</span><button type="button" onClick={() => setFormStreamLinks((current) => [...current, { label: "YouTube", url: "" }])}><Plus />Add stream</button></div>
+                {formStreamLinks.map((stream,index)=><div className="booking-stream" key={index}>
+                  <SearchableSelect value={stream.label || ""} onChange={(value)=>setFormStreamLinks((current)=>current.map((item,itemIndex)=>itemIndex===index?{...item,label:value}:item))} items={STREAM_OPTIONS} placeholder="Platform" searchPlaceholder="Search platforms…" />
+                  <input type="url" className={fieldCls} value={stream.url} onChange={(event)=>setFormStreamLinks((current)=>current.map((item,itemIndex)=>itemIndex===index?{...item,url:event.target.value}:item))} placeholder="Paste the full stream URL" />
+                  {formStreamLinks.length>1&&<button type="button" onClick={()=>setFormStreamLinks((current)=>current.filter((_,itemIndex)=>itemIndex!==index))} aria-label="Remove stream"><Trash2 /></button>}
+                </div>)}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -635,7 +657,7 @@ function AdminDashboard() {
                 </button>
               </div>
             </form>
-          </div>
+          </aside>
         </div>
       )}
     </>

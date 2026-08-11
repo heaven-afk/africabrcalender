@@ -18,6 +18,7 @@ interface SearchableSelectProps {
   placeholder: string;
   searchPlaceholder: string;
   emptyLabel?: string;
+  align?: "left" | "right";
 }
 
 const ItemMark = ({ item }: { item: SelectItem }) => {
@@ -26,7 +27,7 @@ const ItemMark = ({ item }: { item: SelectItem }) => {
   return item.logo && !failed ? <span className="smart-select__logo">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={item.logo} alt="" onError={() => setFailed(true)} /></span> : <span className="smart-select__logo"><Icon /></span>;
 };
 
-export const SearchableSelect: React.FC<SearchableSelectProps> = ({ value, onChange, items, placeholder, searchPlaceholder, emptyLabel = "No matches" }) => {
+export const SearchableSelect: React.FC<SearchableSelectProps> = ({ value, onChange, items, placeholder, searchPlaceholder, emptyLabel = "No matches", align = "left" }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ value, onCha
     return () => { document.removeEventListener("mousedown", closeOutside); document.removeEventListener("keydown", closeEscape); };
   }, []);
 
-  return <div className="smart-select" ref={rootRef}>
+  return <div className={`smart-select smart-select--${align}`} ref={rootRef}>
     <button type="button" className="smart-select__trigger" onClick={() => setOpen((current) => !current)} aria-haspopup="listbox" aria-expanded={open}>
       {selected ? <><ItemMark item={selected} /><span><strong>{selected.label}</strong>{selected.description && <small>{selected.description}</small>}</span></> : <><span className="smart-select__logo"><Gamepad2 /></span><span><strong>{placeholder}</strong></span></>}
       <ChevronDown />

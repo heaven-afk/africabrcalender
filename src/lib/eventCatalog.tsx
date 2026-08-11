@@ -1,4 +1,4 @@
-import { Globe2, MapPin } from "lucide-react";
+import { Clock3, Globe2, Link2, MapPin } from "lucide-react";
 import type { SelectItem } from "@/components/SearchableSelect";
 
 const favicon = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
@@ -37,6 +37,43 @@ export const REGION_OPTIONS: SelectItem[] = [
   { value: "East Asia", label: "East Asia", description: "EA", icon: MapPin },
   { value: "Oceania", label: "Oceania", description: "OCE", icon: MapPin },
 ];
+
+export const TIMEZONE_OPTIONS: SelectItem[] = [
+  { value: "UTC", label: "UTC", description: "Coordinated Universal Time", icon: Clock3 },
+  { value: "Africa/Lagos", label: "West Africa Time", description: "Lagos · WAT", icon: Clock3 },
+  { value: "Africa/Johannesburg", label: "South Africa Time", description: "Johannesburg · SAST", icon: Clock3 },
+  { value: "Europe/London", label: "United Kingdom", description: "London · GMT/BST", icon: Clock3 },
+  { value: "Europe/Berlin", label: "Central Europe", description: "Berlin · CET/CEST", icon: Clock3 },
+  { value: "America/New_York", label: "North America Eastern", description: "New York · ET", icon: Clock3 },
+  { value: "America/Chicago", label: "North America Central", description: "Chicago · CT", icon: Clock3 },
+  { value: "America/Denver", label: "North America Mountain", description: "Denver · MT", icon: Clock3 },
+  { value: "America/Los_Angeles", label: "North America Pacific", description: "Los Angeles · PT", icon: Clock3 },
+  { value: "America/Sao_Paulo", label: "Brazil Time", description: "São Paulo · BRT", icon: Clock3 },
+  { value: "Asia/Dubai", label: "Gulf Time", description: "Dubai · GST", icon: Clock3 },
+  { value: "Asia/Kolkata", label: "India Time", description: "Kolkata · IST", icon: Clock3 },
+  { value: "Asia/Singapore", label: "Singapore Time", description: "Singapore · SGT", icon: Clock3 },
+  { value: "Asia/Shanghai", label: "China Time", description: "Shanghai · CST", icon: Clock3 },
+  { value: "Asia/Seoul", label: "Korea Time", description: "Seoul · KST", icon: Clock3 },
+  { value: "Asia/Tokyo", label: "Japan Time", description: "Tokyo · JST", icon: Clock3 },
+  { value: "Australia/Sydney", label: "Australia Eastern", description: "Sydney · AEST/AEDT", icon: Clock3 },
+];
+
+export const STREAM_OPTIONS: SelectItem[] = [
+  { value: "YouTube", label: "YouTube", description: "Video and livestream", logo: "https://cdn.simpleicons.org/youtube/FF0033" },
+  { value: "Twitch", label: "Twitch", description: "Livestream channel", logo: "https://cdn.simpleicons.org/twitch/9146FF" },
+  { value: "TikTok", label: "TikTok", description: "Live or video post", logo: "https://cdn.simpleicons.org/tiktok/FFFFFF" },
+  { value: "Kick", label: "Kick", description: "Livestream channel", logo: "https://cdn.simpleicons.org/kick/53FC18" },
+  { value: "Other", label: "Other platform", description: "Any other broadcast link", icon: Link2 },
+];
+
+export function getStreamPlatform(label?: string, url?: string) {
+  const haystack = `${label || ""} ${url || ""}`.toLowerCase();
+  if (haystack.includes("youtube") || haystack.includes("youtu.be")) return STREAM_OPTIONS[0];
+  if (haystack.includes("twitch")) return STREAM_OPTIONS[1];
+  if (haystack.includes("tiktok")) return STREAM_OPTIONS[2];
+  if (haystack.includes("kick.com") || label?.toLowerCase() === "kick") return STREAM_OPTIONS[3];
+  return STREAM_OPTIONS.find((item) => item.value === label) || STREAM_OPTIONS[4];
+}
 
 export function normalizeGame(value?: string | null) {
   if (!value) return null;

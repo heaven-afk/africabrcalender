@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       endTime,
     } = body;
 
-    if (!name?.trim() || !orgName?.trim() || !submitterEmail?.trim() || !startDate || !endDate) {
+    if (!name?.trim() || !orgName?.trim() || !submitterEmail?.trim() || !startDate || !endDate || (recurrence && !recurrence.startTime)) {
       return NextResponse.json(
         {
           success: false,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       region: normalizeRegion(region),
       streamLinks: Array.isArray(streamLinks) ? streamLinks.filter((s) => s.url?.trim()) : [],
       location: { ...(location || {}), ...(description?.trim() ? { note: description.trim() } : {}), ...(startTime?.trim() ? { startTime: startTime.trim() } : {}), ...(endTime?.trim() ? { endTime: endTime.trim() } : {}) },
-      recurrence: eventCategory === "scrim" ? recurrence : null,
+      recurrence: recurrence || null,
       status: "pending",
       submitterEmail: submitterEmail.trim(),
       submittedAt: new Date().toISOString(),

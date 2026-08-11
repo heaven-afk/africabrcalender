@@ -1,120 +1,55 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Clock3, Gamepad2, Radio } from "lucide-react";
-import { addDays, format, parseISO, setHours, setMinutes } from "date-fns";
+import { ArrowUpRight, CalendarClock, Clock3, Gamepad2, Radio } from "lucide-react";
+import { format, subDays } from "date-fns";
 import { CalendarEvent } from "@/types/event";
+import { isScrimActiveOnDate } from "@/lib/utils";
 import { OrgLogo } from "./OrgLogo";
 import { CategoryPill } from "./CategoryPill";
 
-interface NextEventCountdownProps {
-  events: CalendarEvent[];
-  onSelectEvent: (event: CalendarEvent) => void;
+interface Props { events:CalendarEvent[]; onSelectEvent:(event:CalendarEvent)=>void; }
+interface TodayOccurrence { event:CalendarEvent; startTime:string|null; endTime:string|null; sortMinutes:number; live:boolean; timezone:string; }
+
+function zonedParts(now:Date,timezone:string){
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(now);
+  const value=(type:string)=>parts.find(part=>part.type===type)?.value||"00";
+  return {date:`${value("year")}-${value("month")}-${value("day")}`,minutes:Number(value("hour"))*60+Number(value("minute"))};
 }
-
-interface NextEventTarget { event: CalendarEvent; targetDate: Date; isLive: boolean; }
-
-function getNextTarget(event: CalendarEvent, now: Date): NextEventTarget | null {
-  try {
-    if (event.category !== "scrim" || !event.recurrence) {
-      const startDate = parseISO(event.startDate);
-      const endDate = parseISO(event.endDate);
-      if (now >= startDate && now <= endDate) return { event, targetDate: startDate, isLive: true };
-      return startDate > now ? { event, targetDate: startDate, isLive: false } : null;
-    }
-
-    const { startTime, endTime, daysOfWeek, exceptions } = event.recurrence;
-    const [startHour, startMinute] = (startTime || "18:00").split(":").map(Number);
-    const [endHour, endMinute] = (endTime || "19:00").split(":").map(Number);
-    const scrimStart = parseISO(event.startDate);
-    const scrimEnd = parseISO(event.endDate);
-    if (now > scrimEnd) return null;
-
-    const checkDate = now < scrimStart ? new Date(scrimStart) : new Date(now);
-    for (let offset = 0; offset < 14; offset += 1) {
-      const day = addDays(checkDate, offset);
-      const dateString = format(day, "yyyy-MM-dd");
-      if (dateString > event.endDate) break;
-      if (exceptions?.includes(dateString) || !daysOfWeek.includes(day.getDay())) continue;
-
-      const eventStart = setMinutes(setHours(day, startHour), startMinute);
-      let eventEnd = setMinutes(setHours(day, endHour), endMinute);
-      if (eventEnd <= eventStart) eventEnd = addDays(eventEnd, 1);
-      if (now >= eventStart && now <= eventEnd) return { event, targetDate: eventStart, isLive: true };
-      if (eventStart > now) return { event, targetDate: eventStart, isLive: false };
-    }
-  } catch (error) {
-    console.error("Unable to calculate the next event", error);
-  }
-  return null;
+const minutes=(time:string)=>{const [hour,minute]=time.split(":").map(Number);return hour*60+minute;};
+function occurrenceForToday(event:CalendarEvent,now:Date):TodayOccurrence|null{
+  const timezone=event.recurrence?.timezone||event.location?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
+  const local=zonedParts(now,timezone); const date=local.date;
+  const active=event.recurrence?isScrimActiveOnDate(date,event.recurrence,event.startDate,event.endDate):date>=event.startDate&&date<=event.endDate;
+  const startTime=event.startTime||event.recurrence?.startTime;
+  const endTime=event.endTime||event.recurrence?.endTime;
+  if(!active&&!startTime)return null;
+  if(!startTime)return {event,startTime:null,endTime:null,sortMinutes:Number.MAX_SAFE_INTEGER,live:false,timezone};
+  const start=minutes(startTime); const end=endTime?minutes(endTime):1439;
+  const previousDate=format(subDays(new Date(`${date}T12:00:00`),1),"yyyy-MM-dd");
+  const previousActive=event.recurrence?isScrimActiveOnDate(previousDate,event.recurrence,event.startDate,event.endDate):previousDate>=event.startDate&&previousDate<=event.endDate;
+  const live=end>start ? active&&local.minutes>=start&&local.minutes<=end : (active&&local.minutes>=start)||(previousActive&&local.minutes<=end);
+  if(!active&&!live)return null;
+  return {event,startTime,endTime:endTime||null,sortMinutes:start,live,timezone};
 }
+const clockLabel=(time:string|null)=>{if(!time)return "Time TBA";const [hour,minute]=time.split(":").map(Number);return `${hour%12||12}:${String(minute).padStart(2,"0")} ${hour<12?"AM":"PM"}`;};
+const zoneLabel=(timezone:string)=>timezone==="UTC"?"UTC":timezone.split("/").pop()?.replaceAll("_"," ")||timezone;
 
-function Countdown({ target, now }: { target: Date; now: Date }) {
-  const difference = Math.max(0, target.getTime() - now.getTime());
-  const values = [
-    { value: Math.floor(difference / 86_400_000), label: "days" },
-    { value: Math.floor((difference / 3_600_000) % 24), label: "hours" },
-    { value: Math.floor((difference / 60_000) % 60), label: "mins" },
-    { value: Math.floor((difference / 1_000) % 60), label: "secs" },
-  ];
-  return (
-    <div className="countdown" aria-label="Time until event">
-      {values.map(({ value, label }) => (
-        <div key={label}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>
-      ))}
-    </div>
-  );
-}
+export const NextEventCountdown:React.FC<Props>=({events,onSelectEvent})=>{
+  const [now,setNow]=useState(()=>new Date());
+  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),30_000);return()=>window.clearInterval(timer)},[]);
+  const today=useMemo(()=>events.map(event=>occurrenceForToday(event,now)).filter(Boolean).sort((a,b)=>a!.sortMinutes-b!.sortMinutes) as TodayOccurrence[],[events,now]);
+  const live=today.find(item=>item.live);
+  const upcoming=today.filter(item=>!item.live&&(!item.startTime||item.sortMinutes>zonedParts(now,item.timezone).minutes)).slice(0,3);
 
-export const NextEventCountdown: React.FC<NextEventCountdownProps> = ({ events, onSelectEvent }) => {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const nextTarget = useMemo(() => {
-    let closest: NextEventTarget | null = null;
-    for (const event of events) {
-      const target = getNextTarget(event, now);
-      if (!target) continue;
-      if (target.isLive) return target;
-      if (!closest || target.targetDate < closest.targetDate) closest = target;
-    }
-    return closest;
-  }, [events, now]);
-
-  return (
-    <section className="now-board" aria-label="Current date and next event">
-      <div className="date-ticket">
-        <span>{format(now, "EEEE")}</span>
-        <strong>{format(now, "dd")}</strong>
-        <small>{format(now, "MMMM yyyy")}</small>
-      </div>
-
-      {nextTarget ? (
-        <button className="next-match" onClick={() => onSelectEvent(nextTarget.event)}>
-          <div className="next-match__identity">
-            <OrgLogo orgName={nextTarget.event.orgName} logoUrl={nextTarget.event.orgLogoUrl} size="md" />
-            <div>
-              <div className="next-match__labels">
-                <span className={nextTarget.isLive ? "status-live" : "status-next"}>
-                  {nextTarget.isLive ? <Radio /> : <Clock3 />}{nextTarget.isLive ? "Live now" : "Up next"}
-                </span>
-                <CategoryPill category={nextTarget.event.category} size="sm" />
-              </div>
-              <h2>{nextTarget.event.name}</h2>
-              <p>{nextTarget.event.orgName}{nextTarget.event.game && <><Gamepad2 />{nextTarget.event.game}</>}</p>
-            </div>
-          </div>
-          <div className="next-match__timing">
-            {nextTarget.isLive ? <div className="live-callout"><span />In progress</div> : <Countdown target={nextTarget.targetDate} now={now} />}
-            <ArrowUpRight aria-hidden="true" />
-          </div>
-        </button>
-      ) : (
-        <div className="next-match next-match--empty"><div><span className="status-next"><Clock3 />Schedule open</span><h2>No upcoming event yet.</h2><p>Check the full calendar or submit the next match.</p></div></div>
-      )}
-    </section>
-  );
+  return <section className="now-board" aria-label="Today and live schedule">
+    <div className="date-ticket"><span>{format(now,"EEEE")}</span><strong>{format(now,"dd")}</strong><small>{format(now,"MMMM yyyy")}</small></div>
+    {live?<button className="next-match next-match--live" onClick={()=>onSelectEvent(live.event)}>
+      <div className="next-match__identity"><OrgLogo orgName={live.event.orgName} logoUrl={live.event.orgLogoUrl} size="md"/><div><div className="next-match__labels"><span className="status-live"><Radio/>Live now</span><CategoryPill category={live.event.category} size="sm"/></div><h2>{live.event.name}</h2><p>{live.event.orgName}{live.event.game&&<><Gamepad2/>{live.event.game}</>}</p></div></div>
+      <div className="next-match__timing"><div className="live-callout"><span/>{clockLabel(live.startTime)}{live.endTime?` – ${clockLabel(live.endTime)}`:""} · {zoneLabel(live.timezone)}</div><ArrowUpRight/></div>
+    </button>:<div className="next-match next-match--quiet">
+      <div className="quiet-schedule__intro"><span><Clock3/>Nothing live right now</span><h2>{today.length?"Still on today’s schedule":"No events scheduled today"}</h2><p>{today.length?"Tap an event to see the complete details.":"The calendar is clear for the rest of today."}</p></div>
+      {upcoming.length>0&&<div className="quiet-schedule" aria-label="Upcoming today">{upcoming.map(item=><button key={item.event.id} onClick={()=>onSelectEvent(item.event)}><OrgLogo orgName={item.event.orgName} logoUrl={item.event.orgLogoUrl} size="sm"/><span><small>{clockLabel(item.startTime)} · {zoneLabel(item.timezone)}</small><strong>{item.event.name}</strong></span><CalendarClock/></button>)}</div>}
+    </div>}
+  </section>;
 };

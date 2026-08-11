@@ -17,8 +17,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, onSelec
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const getEventsForDay = (day: Date) => {
     const ds = format(day, "yyyy-MM-dd");
-    return events.filter((evt) => evt.category === "scrim"
-      ? Boolean(evt.recurrence && isScrimActiveOnDate(ds, evt.recurrence, evt.startDate, evt.endDate))
+    return events.filter((evt) => evt.recurrence
+      ? isScrimActiveOnDate(ds, evt.recurrence, evt.startDate, evt.endDate)
       : ds >= evt.startDate && ds <= evt.endDate);
   };
   const total = days.reduce((sum: number, day: Date) => sum + getEventsForDay(day).length, 0);

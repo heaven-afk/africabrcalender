@@ -9,6 +9,7 @@ export interface EventLocation {
   discordUrl?: string;
   websiteUrl?: string;
   note?: string;
+  timezone?: string;
 }
 
 export interface ScrimRecurrence {

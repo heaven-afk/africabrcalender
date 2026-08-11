@@ -2,7 +2,7 @@
 
 import React from "react";
 import { format, parseISO } from "date-fns";
-import { X, Tv, ArrowUpRight, CalendarDays, Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
+import { X, ArrowUpRight, CalendarDays, Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 
 interface DayDetailPopoverProps {
@@ -26,32 +26,28 @@ export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({ date, events
         <div className="day-drawer__heading">
           <p>{format(parseISO(date), "EEEE")}</p>
           <h2 id="day-drawer-title">{format(parseISO(date), "MMMM d")}</h2>
-          <span>{events.length} {events.length === 1 ? "event" : "events"}</span>
+          <span>{format(parseISO(date), "yyyy")} · {events.length} {events.length === 1 ? "event" : "events"}</span>
         </div>
         <div className="day-event-list">
           {events.map((event) => {
             const Icon = ICONS[event.category];
             return (
               <button key={event.id} onClick={() => { onSelectEvent(event); onClose(); }} className={`day-event day-event--${event.category}`}>
-                <span className="day-event__icon"><Icon /></span>
-                <span className="day-event__copy">
-                  <small>{event.category} {event.region ? `· ${event.region}` : ""}</small>
-                  <strong>{event.name}</strong>
-                  <span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span>
-                </span>
                 {event.orgLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img className="day-event__logo" src={event.orgLogoUrl} alt={`${event.orgName} logo`} loading="lazy" decoding="async" />
                 ) : <span className="day-event__logo day-event__logo--fallback"><Icon /></span>}
+                <span className="day-event__copy">
+                  <small><Icon />{event.category}{event.game ? ` · ${event.game}` : ""}</small>
+                  <strong>{event.name}</strong>
+                  <span>{event.orgName}{event.region ? ` · ${event.region}` : ""}</span>
+                </span>
+                <span className="day-event__aside"><strong>{event.startTime || event.recurrence?.startTime || "All day"}</strong>{(event.endTime || event.recurrence?.endTime)&&<small>to {event.endTime || event.recurrence?.endTime}</small>}</span>
                 <ArrowUpRight className="day-event__arrow" />
               </button>
             );
           })}
         </div>
-        <footer className="drawer-footer drawer-footer--quiet">
-          <span>Select an event for complete details</span>
-          {events.some((event) => event.streamLinks?.length) && <Tv />}
-        </footer>
       </aside>
     </div>
   );

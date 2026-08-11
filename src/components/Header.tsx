@@ -12,7 +12,6 @@ import {
   CircleHelp,
   ChevronLeft,
   ChevronRight,
-  Crosshair,
   Plus,
 } from "lucide-react";
 
@@ -52,8 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
     <div className="match-header__inner">
       <div className="header-primary">
         <button className="brand-lockup" onClick={onToday} aria-label="Esports Calendar — return to today">
-          <span className="brand-lockup__mark"><Crosshair aria-hidden="true" /></span>
-          <span className="brand-lockup__type"><strong>ESPORTS</strong><small>Calendar</small></span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-lockup__logo" src="/esports-calendar-logo.png" alt="Esports Calendar" />
         </button>
 
         <nav className="view-tabs" aria-label="Calendar views">

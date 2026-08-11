@@ -25,11 +25,7 @@ const CATEGORY_ICON = { ranking: Medal, tournament: Trophy, scrim: Crosshair, aw
 
 function getEventsForDay(date: string, events: CalendarEvent[]) {
   return events.filter((event) => {
-    if (event.category === "scrim") {
-      return event.recurrence
-        ? isScrimActiveOnDate(date, event.recurrence, event.startDate, event.endDate)
-        : date >= event.startDate && date <= event.endDate;
-    }
+    if (event.recurrence) return isScrimActiveOnDate(date, event.recurrence, event.startDate, event.endDate);
     return date >= event.startDate && date <= event.endDate;
   });
 }
