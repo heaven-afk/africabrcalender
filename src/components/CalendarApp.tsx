@@ -20,6 +20,7 @@ import { Footer } from "@/components/Footer";
 import { CalendarEvent, EventCategory } from "@/types/event";
 import { Loader2, MapPinned, CalendarRange, Orbit, CircleAlert, RefreshCw } from "lucide-react";
 import { addMonths } from "date-fns";
+import { getEventTimingStatus } from "@/lib/eventTiming";
 
 interface CalendarAppProps {
   initialEvents: CalendarEvent[];
@@ -29,6 +30,7 @@ interface CalendarAppProps {
 export default function CalendarApp({ initialEvents, initialLoadError = false }: CalendarAppProps) {
   const loading = false;
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [now, setNow] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   // Filters
@@ -94,6 +96,11 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   }, []);
 
   useEffect(() => {
+    const clockTimer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(clockTimer);
+  }, []);
+
+  useEffect(() => {
     const refreshTimer = window.setInterval(fetchEvents, 30_000);
     return () => {
       window.clearInterval(refreshTimer);
@@ -113,8 +120,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
       if (selectedRegions.length && (!evt.region || !selectedRegions.includes(evt.region.trim()))) return false;
       if (selectedGames.length && (!evt.game || !selectedGames.includes(evt.game.trim()))) return false;
       if (timing !== "all") {
-        const today = new Date().toISOString().slice(0, 10);
-        const state = evt.endDate < today ? "past" : evt.startDate > today ? "upcoming" : "live";
+        const state = getEventTimingStatus(evt, now);
         if (state !== timing) return false;
       }
       if (search.trim()) {
@@ -128,7 +134,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
       }
       return true;
     });
-  }, [allEvents, selectedCategories, selectedRegions, selectedGames, timing, search]);
+  }, [allEvents, selectedCategories, selectedRegions, selectedGames, timing, search, now]);
 
   const handleCategoryToggle = useCallback((c: EventCategory) => {
     setSelectedCategories((prev) =>
@@ -185,7 +191,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         </section>
 
         {/* Live / Next Event Countdown Banner */}
-        <NextEventCountdown events={allEvents} onSelectEvent={setSelectedEvent} />
+        <NextEventCountdown events={allEvents} now={now} onSelectEvent={setSelectedEvent} />
 
         {/* Filters */}
         <FiltersBar
@@ -222,20 +228,23 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
             allEvents={filteredEvents}
             onDayClick={handleDayClick}
             scrollToRef={scrollFnRef}
+            now={now}
           />
         ) : viewMode === "week" ? (
           <WeekView
             currentDate={currentDate}
             events={filteredEvents}
             onSelectEvent={setSelectedEvent}
+            now={now}
           />
         ) : viewMode === "tournaments" ? (
           <TournamentsView
             events={filteredEvents}
             onSelectEvent={setSelectedEvent}
+            now={now}
           />
         ) : (
-          <ListView events={filteredEvents} onSelectEvent={setSelectedEvent} />
+          <ListView events={filteredEvents} now={now} onSelectEvent={setSelectedEvent} />
         )}
         </div>
       </main>
@@ -243,7 +252,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
       <Footer />
 
       {/* Modals */}
-      <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      <EventModal event={selectedEvent} now={now} onClose={() => setSelectedEvent(null)} />
 
       <CommandPaletteModal
         open={cmdOpen}
@@ -274,6 +283,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
           events={dayPopover.events}
           onClose={() => setDayPopover(null)}
           onSelectEvent={(evt) => { setSelectedEvent(evt); setDayPopover(null); }}
+          now={now}
         />
       )}
     </div>

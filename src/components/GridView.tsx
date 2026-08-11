@@ -10,6 +10,7 @@ import {
 import { Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 import { isScrimActiveOnDate } from "@/lib/utils";
+import { isEventLive } from "@/lib/eventTiming";
 
 interface GridViewProps {
   currentDate: Date;
@@ -17,6 +18,7 @@ interface GridViewProps {
   allEvents: CalendarEvent[];
   onDayClick: (date: string, events: CalendarEvent[]) => void;
   scrollToRef?: React.MutableRefObject<((dir: "prev" | "next" | "today") => void) | null>;
+  now: Date;
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -30,10 +32,11 @@ function getEventsForDay(date: string, events: CalendarEvent[]) {
   });
 }
 
-const EventMark = ({ event }: { event: CalendarEvent }) => {
+const EventMark = ({ event, now }: { event: CalendarEvent; now: Date }) => {
   const Icon = CATEGORY_ICON[event.category];
+  const live = isEventLive(event, now);
   return (
-    <span className={`cal-event-mark cal-event-mark--${event.category}`} title={`${event.name} — ${event.orgName}`}>
+    <span className={`cal-event-mark cal-event-mark--${event.category} ${live ? "is-live" : ""}`} title={`${event.name} — ${event.orgName}${live ? " — Live now" : ""}`}>
       {event.orgLogoUrl ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -68,6 +71,7 @@ interface MonthBlockProps {
   events: CalendarEvent[];
   onDayClick: (date: string, events: CalendarEvent[]) => void;
   monthRef: (node: HTMLDivElement | null) => void;
+  now: Date;
 }
 
 function HoverLogo({ event }: { event: CalendarEvent }) {
@@ -83,6 +87,7 @@ const MonthBlock = React.memo(function MonthBlock({
   events,
   onDayClick,
   monthRef,
+  now,
 }: MonthBlockProps) {
   const [hoveredDay, setHoveredDay] = useState<{
     date: string;
@@ -144,7 +149,7 @@ const MonthBlock = React.memo(function MonthBlock({
               {inMonth && <span className="cal-day-num">{number}</span>}
               {hasEvents && (
                 <span className="cal-event-stack">
-                  {dayEvents.slice(0, 2).map((event: CalendarEvent) => <EventMark key={event.id} event={event} />)}
+                  {dayEvents.slice(0, 2).map((event: CalendarEvent) => <EventMark key={event.id} event={event} now={now} />)}
                   {dayEvents.length > 2 && <span className="cal-overflow">+{dayEvents.length - 2}</span>}
                 </span>
               )}
@@ -166,7 +171,7 @@ const MonthBlock = React.memo(function MonthBlock({
             {hoveredDay.events.slice(0, 4).map((event) => (
               <article key={event.id} className={`calendar-hover-event calendar-hover-event--${event.category}`}>
                 <HoverLogo event={event} />
-                <div><small>{event.category}</small><strong>{event.name}</strong><span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span></div>
+                <div><small>{event.category}{isEventLive(event, now) ? " · Live" : ""}</small><strong>{event.name}</strong><span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span></div>
               </article>
             ))}
             {hoveredDay.events.length > 4 && <p>+{hoveredDay.events.length - 4} more events</p>}
@@ -177,7 +182,7 @@ const MonthBlock = React.memo(function MonthBlock({
   );
 });
 
-export const GridView: React.FC<GridViewProps> = ({ currentDate, allEvents, onDayClick, scrollToRef }) => {
+export const GridView: React.FC<GridViewProps> = ({ currentDate, allEvents, onDayClick, scrollToRef, now }) => {
   const year = getYear(currentDate);
   const months = useMemo(() => eachMonthOfInterval({
     start: startOfYear(new Date(year, 0, 1)),
@@ -233,6 +238,7 @@ export const GridView: React.FC<GridViewProps> = ({ currentDate, allEvents, onDa
               events={monthEvents}
               onDayClick={onDayClick}
               monthRef={(node) => { monthRefs.current[index] = node; }}
+              now={now}
             />
           );
         })}

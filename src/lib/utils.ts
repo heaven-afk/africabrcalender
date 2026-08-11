@@ -2,7 +2,7 @@
  * Pure utility functions — safe to import in both client and server components
  * No Node.js / fs dependencies
  */
-import { ScrimRecurrence } from "@/types/event";
+import { ScrimRecurrence } from "../types/event";
 
 /**
  * Generate months overlapping with [startDate, endDate] in format YYYY-MM

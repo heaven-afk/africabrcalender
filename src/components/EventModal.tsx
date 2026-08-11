@@ -10,8 +10,9 @@ import { CalendarEvent } from "@/types/event";
 import { CategoryPill } from "./CategoryPill";
 import { OrgLogo } from "./OrgLogo";
 import { getStreamPlatform } from "@/lib/eventCatalog";
+import { getEventTimingStatus } from "@/lib/eventTiming";
 
-interface EventModalProps { event: CalendarEvent | null; onClose: () => void; }
+interface EventModalProps { event: CalendarEvent | null; now: Date; onClose: () => void; }
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function formatDateRange(event: CalendarEvent) {
@@ -23,7 +24,7 @@ function formatDateRange(event: CalendarEvent) {
   } catch { return `${event.startDate} — ${event.endDate}`; }
 }
 
-export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
+export const EventModal: React.FC<EventModalProps> = ({ event, now, onClose }) => {
   useEffect(() => {
     if (!event) return;
     const onKey = (keyEvent: KeyboardEvent) => { if (keyEvent.key === "Escape") onClose(); };
@@ -34,6 +35,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
   if (!event) return null;
   const primaryLink = event.streamLinks?.[0]?.url || event.location?.websiteUrl;
   const timezone = event.recurrence?.timezone || event.location?.timezone;
+  const timingStatus = getEventTimingStatus(event, now);
 
   return (
     <div className="drawer-backdrop animate-fadeIn" onMouseDown={onClose}>
@@ -47,7 +49,7 @@ export const EventModal: React.FC<EventModalProps> = ({ event, onClose }) => {
           <div className="event-drawer__identity">
             <OrgLogo orgName={event.orgName} logoUrl={event.orgLogoUrl} size="lg" />
             <div>
-              <CategoryPill category={event.category} size="sm" />
+              <div className="event-drawer__labels"><CategoryPill category={event.category} size="sm" />{timingStatus === "live" && <span className="view-live-status"><i />Live now</span>}</div>
               <h2 id="event-drawer-title">{event.name}</h2>
               {event.stage && <p>{event.stage}</p>}
             </div>

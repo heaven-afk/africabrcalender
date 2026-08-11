@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { format, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { CalendarDays, ChevronRight, Clock3, ExternalLink, MapPin, Radio, Trophy, Medal, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent, EventCategory } from "@/types/event";
 import { OrgLogo } from "./OrgLogo";
+import { getEventTimingStatus } from "@/lib/eventTiming";
 
 interface ListViewProps {
   events: CalendarEvent[];
+  now: Date;
   onSelectEvent: (event: CalendarEvent) => void;
 }
 
@@ -19,15 +21,6 @@ const categoryMeta: Record<EventCategory, { label: string; icon: React.ElementTy
   podcast: { label: "Talk", icon: Mic2 },
 };
 
-function getStatus(evt: CalendarEvent): "live" | "upcoming" | "ended" {
-  const today = startOfToday();
-  const start = parseISO(evt.startDate);
-  const end = parseISO(evt.endDate);
-  if (isBefore(end, today)) return "ended";
-  if (isAfter(start, today)) return "upcoming";
-  return "live";
-}
-
 function dateParts(evt: CalendarEvent) {
   const start = parseISO(evt.startDate);
   const end = parseISO(evt.endDate);
@@ -38,7 +31,7 @@ function dateParts(evt: CalendarEvent) {
   };
 }
 
-export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => {
+export const ListView: React.FC<ListViewProps> = ({ events, now, onSelectEvent }) => {
   if (events.length === 0) {
     return <div className="empty-state"><CalendarDays /><h3>No events on the agenda</h3><p>Try another month or loosen the active filters.</p></div>;
   }
@@ -52,7 +45,7 @@ export const ListView: React.FC<ListViewProps> = ({ events, onSelectEvent }) => 
 
       <div className="agenda-feed">
         {events.map((evt) => {
-          const status = getStatus(evt);
+          const status = getEventTimingStatus(evt, now);
           const date = dateParts(evt);
           const meta = categoryMeta[evt.category];
           const Icon = meta.icon;

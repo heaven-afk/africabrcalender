@@ -4,17 +4,19 @@ import React from "react";
 import { format, parseISO } from "date-fns";
 import { X, ArrowUpRight, CalendarDays, Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
+import { isEventLive } from "@/lib/eventTiming";
 
 interface DayDetailPopoverProps {
   date: string | null;
   events: CalendarEvent[];
   onClose: () => void;
   onSelectEvent: (event: CalendarEvent) => void;
+  now: Date;
 }
 
 const ICONS = { ranking: Medal, tournament: Trophy, scrim: Crosshair, award: Award, podcast: Mic2 };
 
-export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({ date, events, onClose, onSelectEvent }) => {
+export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({ date, events, now, onClose, onSelectEvent }) => {
   if (!date) return null;
   return (
     <div className="drawer-backdrop animate-fadeIn" onMouseDown={onClose}>
@@ -38,7 +40,7 @@ export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({ date, events
                   <img className="day-event__logo" src={event.orgLogoUrl} alt={`${event.orgName} logo`} loading="lazy" decoding="async" />
                 ) : <span className="day-event__logo day-event__logo--fallback"><Icon /></span>}
                 <span className="day-event__copy">
-                  <small><Icon />{event.category}{event.game ? ` · ${event.game}` : ""}</small>
+                  <small><Icon />{event.category}{isEventLive(event, now) ? " · Live" : ""}{event.game ? ` · ${event.game}` : ""}</small>
                   <strong>{event.name}</strong>
                   <span>{event.orgName}{event.region ? ` · ${event.region}` : ""}</span>
                 </span>

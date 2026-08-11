@@ -1,46 +1,37 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { ArrowUpRight, CalendarClock, Clock3, Gamepad2, Radio } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { CalendarEvent } from "@/types/event";
 import { isScrimActiveOnDate } from "@/lib/utils";
 import { OrgLogo } from "./OrgLogo";
 import { CategoryPill } from "./CategoryPill";
+import { getEventTimezone, getZonedClock, isEventLive, timeToMinutes } from "@/lib/eventTiming";
 
-interface Props { events:CalendarEvent[]; onSelectEvent:(event:CalendarEvent)=>void; }
+interface Props { events:CalendarEvent[]; now:Date; onSelectEvent:(event:CalendarEvent)=>void; }
 interface TodayOccurrence { event:CalendarEvent; startTime:string|null; endTime:string|null; sortMinutes:number; live:boolean; timezone:string; }
 
-function zonedParts(now:Date,timezone:string){
-  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(now);
-  const value=(type:string)=>parts.find(part=>part.type===type)?.value||"00";
-  return {date:`${value("year")}-${value("month")}-${value("day")}`,minutes:Number(value("hour"))*60+Number(value("minute"))};
-}
-const minutes=(time:string)=>{const [hour,minute]=time.split(":").map(Number);return hour*60+minute;};
 function occurrenceForToday(event:CalendarEvent,now:Date):TodayOccurrence|null{
-  const timezone=event.recurrence?.timezone||event.location?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
-  const local=zonedParts(now,timezone); const date=local.date;
+  const timezone=getEventTimezone(event);
+  const local=getZonedClock(now,timezone); const date=local.date;
   const active=event.recurrence?isScrimActiveOnDate(date,event.recurrence,event.startDate,event.endDate):date>=event.startDate&&date<=event.endDate;
   const startTime=event.startTime||event.recurrence?.startTime;
   const endTime=event.endTime||event.recurrence?.endTime;
   if(!active&&!startTime)return null;
   if(!startTime)return {event,startTime:null,endTime:null,sortMinutes:Number.MAX_SAFE_INTEGER,live:false,timezone};
-  const start=minutes(startTime); const end=endTime?minutes(endTime):1439;
-  const previousDate=format(subDays(new Date(`${date}T12:00:00`),1),"yyyy-MM-dd");
-  const previousActive=event.recurrence?isScrimActiveOnDate(previousDate,event.recurrence,event.startDate,event.endDate):previousDate>=event.startDate&&previousDate<=event.endDate;
-  const live=end>start ? active&&local.minutes>=start&&local.minutes<=end : (active&&local.minutes>=start)||(previousActive&&local.minutes<=end);
+  const start=timeToMinutes(startTime);
+  const live=isEventLive(event,now);
   if(!active&&!live)return null;
   return {event,startTime,endTime:endTime||null,sortMinutes:start,live,timezone};
 }
 const clockLabel=(time:string|null)=>{if(!time)return "Time TBA";const [hour,minute]=time.split(":").map(Number);return `${hour%12||12}:${String(minute).padStart(2,"0")} ${hour<12?"AM":"PM"}`;};
 const zoneLabel=(timezone:string)=>timezone==="UTC"?"UTC":timezone.split("/").pop()?.replaceAll("_"," ")||timezone;
 
-export const NextEventCountdown:React.FC<Props>=({events,onSelectEvent})=>{
-  const [now,setNow]=useState(()=>new Date());
-  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),30_000);return()=>window.clearInterval(timer)},[]);
+export const NextEventCountdown:React.FC<Props>=({events,now,onSelectEvent})=>{
   const today=useMemo(()=>events.map(event=>occurrenceForToday(event,now)).filter(Boolean).sort((a,b)=>a!.sortMinutes-b!.sortMinutes) as TodayOccurrence[],[events,now]);
   const live=today.find(item=>item.live);
-  const upcoming=today.filter(item=>!item.live&&(!item.startTime||item.sortMinutes>zonedParts(now,item.timezone).minutes)).slice(0,3);
+  const upcoming=today.filter(item=>!item.live&&(!item.startTime||item.sortMinutes>getZonedClock(now,item.timezone).minutes)).slice(0,3);
 
   return <section className="now-board" aria-label="Today and live schedule">
     <div className="date-ticket"><span>{format(now,"EEEE")}</span><strong>{format(now,"dd")}</strong><small>{format(now,"MMMM yyyy")}</small></div>
