@@ -10,7 +10,7 @@ import {
 import { Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
 import { isScrimActiveOnDate } from "@/lib/utils";
-import { isEventLive } from "@/lib/eventTiming";
+import { isEventOccurrenceLive } from "@/lib/eventTiming";
 
 interface GridViewProps {
   currentDate: Date;
@@ -32,9 +32,9 @@ function getEventsForDay(date: string, events: CalendarEvent[]) {
   });
 }
 
-const EventMark = ({ event, now }: { event: CalendarEvent; now: Date }) => {
+const EventMark = ({ event, date, now }: { event: CalendarEvent; date: string; now: Date }) => {
   const Icon = CATEGORY_ICON[event.category];
-  const live = isEventLive(event, now);
+  const live = isEventOccurrenceLive(event, date, now);
   return (
     <span className={`cal-event-mark cal-event-mark--${event.category} ${live ? "is-live" : ""}`} title={`${event.name} — ${event.orgName}${live ? " — Live now" : ""}`}>
       {event.orgLogoUrl ? (
@@ -149,7 +149,7 @@ const MonthBlock = React.memo(function MonthBlock({
               {inMonth && <span className="cal-day-num">{number}</span>}
               {hasEvents && (
                 <span className="cal-event-stack">
-                  {dayEvents.slice(0, 2).map((event: CalendarEvent) => <EventMark key={event.id} event={event} now={now} />)}
+                  {dayEvents.slice(0, 2).map((event: CalendarEvent) => <EventMark key={event.id} event={event} date={date} now={now} />)}
                   {dayEvents.length > 2 && <span className="cal-overflow">+{dayEvents.length - 2}</span>}
                 </span>
               )}
@@ -171,7 +171,7 @@ const MonthBlock = React.memo(function MonthBlock({
             {hoveredDay.events.slice(0, 4).map((event) => (
               <article key={event.id} className={`calendar-hover-event calendar-hover-event--${event.category}`}>
                 <HoverLogo event={event} />
-                <div><small>{event.category}{isEventLive(event, now) ? " · Live" : ""}</small><strong>{event.name}</strong><span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span></div>
+                <div><small>{event.category}{isEventOccurrenceLive(event, hoveredDay.date, now) ? " · Live" : ""}</small><strong>{event.name}</strong><span>{event.orgName}{event.game ? ` · ${event.game}` : ""}</span></div>
               </article>
             ))}
             {hoveredDay.events.length > 4 && <p>+{hoveredDay.events.length - 4} more events</p>}

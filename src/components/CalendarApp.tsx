@@ -48,6 +48,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
 
   // Modals
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedOccurrenceDate, setSelectedOccurrenceDate] = useState<string | null>(null);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
@@ -57,6 +58,16 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   const closeWalkthrough = useCallback(() => {
     setWalkthroughOpen(false);
     try { window.localStorage.setItem("esports-calendar-tour-v1", "seen"); } catch { /* Storage may be unavailable. */ }
+  }, []);
+
+  const selectEvent = useCallback((event: CalendarEvent, occurrenceDate: string | null = null) => {
+    setSelectedEvent(event);
+    setSelectedOccurrenceDate(occurrenceDate);
+  }, []);
+
+  const closeEvent = useCallback(() => {
+    setSelectedEvent(null);
+    setSelectedOccurrenceDate(null);
   }, []);
 
   // Scroll ref passed into GridView
@@ -191,7 +202,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         </section>
 
         {/* Live / Next Event Countdown Banner */}
-        <NextEventCountdown events={allEvents} now={now} onSelectEvent={setSelectedEvent} />
+        <NextEventCountdown events={allEvents} now={now} onSelectEvent={selectEvent} />
 
         {/* Filters */}
         <FiltersBar
@@ -234,17 +245,17 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
           <WeekView
             currentDate={currentDate}
             events={filteredEvents}
-            onSelectEvent={setSelectedEvent}
+            onSelectEvent={(event, occurrenceDate) => selectEvent(event, occurrenceDate)}
             now={now}
           />
         ) : viewMode === "tournaments" ? (
           <TournamentsView
             events={filteredEvents}
-            onSelectEvent={setSelectedEvent}
+            onSelectEvent={selectEvent}
             now={now}
           />
         ) : (
-          <ListView events={filteredEvents} now={now} onSelectEvent={setSelectedEvent} />
+          <ListView events={filteredEvents} now={now} onSelectEvent={selectEvent} />
         )}
         </div>
       </main>
@@ -252,14 +263,14 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
       <Footer />
 
       {/* Modals */}
-      <EventModal event={selectedEvent} now={now} onClose={() => setSelectedEvent(null)} />
+      <EventModal event={selectedEvent} occurrenceDate={selectedOccurrenceDate} now={now} onClose={closeEvent} />
 
       <CommandPaletteModal
         open={cmdOpen}
         onClose={() => setCmdOpen(false)}
         events={allEvents}
         onViewChange={setViewMode}
-        onSelectEvent={setSelectedEvent}
+        onSelectEvent={selectEvent}
       />
 
       <ExportModal
@@ -282,7 +293,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
           date={dayPopover.date}
           events={dayPopover.events}
           onClose={() => setDayPopover(null)}
-          onSelectEvent={(evt) => { setSelectedEvent(evt); setDayPopover(null); }}
+          onSelectEvent={(evt) => { selectEvent(evt, dayPopover.date); setDayPopover(null); }}
           now={now}
         />
       )}

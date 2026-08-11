@@ -6,9 +6,9 @@ import { CalendarDays, ChevronRight, Clock3, Trophy, Medal, Crosshair, Award, Mi
 import { CalendarEvent, EventCategory } from "@/types/event";
 import { isScrimActiveOnDate } from "@/lib/utils";
 import { OrgLogo } from "./OrgLogo";
-import { isEventLive } from "@/lib/eventTiming";
+import { isEventOccurrenceLive } from "@/lib/eventTiming";
 
-interface WeekViewProps { currentDate: Date; events: CalendarEvent[]; now: Date; onSelectEvent: (e: CalendarEvent) => void; }
+interface WeekViewProps { currentDate: Date; events: CalendarEvent[]; now: Date; onSelectEvent: (e: CalendarEvent, occurrenceDate: string) => void; }
 
 const icons: Record<EventCategory, React.ElementType> = { ranking: Medal, tournament: Trophy, scrim: Crosshair, award: Award, podcast: Mic2 };
 
@@ -33,6 +33,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, now, on
 
       <div className="week-board-new">
         {days.map((day: Date) => {
+          const occurrenceDate = format(day, "yyyy-MM-dd");
           const dayEvents = getEventsForDay(day);
           const today = isToday(day);
           return (
@@ -46,8 +47,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, events, now, on
                 {dayEvents.length === 0 ? <div className="week-empty"><CalendarDays /><span>Clear</span></div> : dayEvents.map((evt) => {
                   const Icon = icons[evt.category];
                   return (
-                    <button key={evt.id} className={`week-card week-card--${evt.category}`} onClick={() => onSelectEvent(evt)}>
-                      <div className="week-card__top"><span><Icon />{evt.category}{isEventLive(evt, now) && <em className="view-live-status"><i />Live</em>}</span><ChevronRight /></div>
+                    <button key={evt.id} className={`week-card week-card--${evt.category}`} onClick={() => onSelectEvent(evt, occurrenceDate)}>
+                      <div className="week-card__top"><span><Icon />{evt.category}{isEventOccurrenceLive(evt, occurrenceDate, now) && <em className="view-live-status"><i />Live</em>}</span><ChevronRight /></div>
                       <div className="week-card__identity"><OrgLogo orgName={evt.orgName} logoUrl={evt.orgLogoUrl} size="sm" /><div><strong>{evt.name}</strong><small>{evt.orgName}</small></div></div>
                       <div className="week-card__meta">{(evt.startTime || evt.recurrence?.startTime) ? <><Clock3 />{evt.startTime || evt.recurrence?.startTime}{(evt.endTime || evt.recurrence?.endTime) ? `–${evt.endTime || evt.recurrence?.endTime}` : ""}</> : evt.stage || evt.game || "View details"}</div>
                     </button>

@@ -4,7 +4,7 @@ import React from "react";
 import { format, parseISO } from "date-fns";
 import { X, ArrowUpRight, CalendarDays, Medal, Trophy, Crosshair, Award, Mic2 } from "lucide-react";
 import { CalendarEvent } from "@/types/event";
-import { isEventLive } from "@/lib/eventTiming";
+import { isEventOccurrenceLive } from "@/lib/eventTiming";
 
 interface DayDetailPopoverProps {
   date: string | null;
@@ -40,7 +40,7 @@ export const DayDetailPopover: React.FC<DayDetailPopoverProps> = ({ date, events
                   <img className="day-event__logo" src={event.orgLogoUrl} alt={`${event.orgName} logo`} loading="lazy" decoding="async" />
                 ) : <span className="day-event__logo day-event__logo--fallback"><Icon /></span>}
                 <span className="day-event__copy">
-                  <small><Icon />{event.category}{isEventLive(event, now) ? " · Live" : ""}{event.game ? ` · ${event.game}` : ""}</small>
+                  <small><Icon />{event.category}{isEventOccurrenceLive(event, date, now) ? " · Live" : ""}{event.game ? ` · ${event.game}` : ""}</small>
                   <strong>{event.name}</strong>
                   <span>{event.orgName}{event.region ? ` · ${event.region}` : ""}</span>
                 </span>

@@ -120,3 +120,12 @@ export function getEventTimingStatus(event: CalendarEvent, now = new Date()): Ev
 export function isEventLive(event: CalendarEvent, now = new Date()): boolean {
   return getEventTimingStatus(event, now) === "live";
 }
+
+export function isEventOccurrenceLive(
+  event: CalendarEvent,
+  occurrenceDate: string,
+  now = new Date(),
+): boolean {
+  const clock = getZonedClock(now, getEventTimezone(event));
+  return occurrenceDate === clock.date && isEventLive(event, now);
+}
