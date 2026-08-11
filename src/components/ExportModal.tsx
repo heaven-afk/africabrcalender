@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState } from "react";
 import {
@@ -19,11 +20,13 @@ interface ExportModalProps {
 type ExportScope = "all" | "month";
 type CalendarProvider = "google" | "apple" | "outlook" | "download";
 
-const providerMeta: Record<CalendarProvider, { name: string; mark: string; description: string }> = {
-  google: { name: "Google Calendar", mark: "G", description: "Copy feed and open Google" },
-  apple: { name: "Apple Calendar", mark: "A", description: "Open a live subscription" },
-  outlook: { name: "Outlook", mark: "O", description: "Copy feed and open Outlook" },
-  download: { name: "Download .ics file", mark: "↓", description: "A one-time calendar snapshot" },
+const CALENDAR_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || "https://africabrcalender.vercel.app").replace(/\/$/, "");
+
+const providerMeta: Record<CalendarProvider, { name: string; logo: string; description: string }> = {
+  google: { name: "Google Calendar", logo: "https://cdn.simpleicons.org/googlecalendar/4285F4", description: "Subscribe with your Google account" },
+  apple: { name: "Apple Calendar", logo: "https://cdn.simpleicons.org/apple/111111", description: "Open a live subscription" },
+  outlook: { name: "Outlook", logo: "/outlook-calendar.svg", description: "Subscribe with Outlook on the web" },
+  download: { name: "Download .ics file", logo: "", description: "A one-time calendar snapshot" },
 };
 
 function downloadICS(content: string, filename: string) {
@@ -55,7 +58,6 @@ async function copyText(value: string) {
 
 export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events, currentMonth }) => {
   const [scope, setScope] = useState<ExportScope>("all");
-  const [working, setWorking] = useState<CalendarProvider | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   if (!open) return null;
@@ -65,45 +67,26 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
   const feedPath = scope === "month"
     ? `/api/calendar?scope=month&month=${encodeURIComponent(month)}`
     : "/api/calendar?scope=all";
+  const feedUrl = `${CALENDAR_ORIGIN}${feedPath}`;
+  const calendarName = scope === "month" ? `${monthLabel} Esports Calendar` : "Esports Calendar";
+  const providerLinks: Record<Exclude<CalendarProvider, "download">, string> = {
+    google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`,
+    apple: feedUrl.replace(/^https?:/, "webcal:"),
+    outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(feedUrl)}&name=${encodeURIComponent(calendarName)}`,
+  };
 
-  const handleProvider = async (provider: CalendarProvider) => {
-    setWorking(provider);
+  const handleDownload = () => {
     setNotice(null);
-    const feedUrl = new URL(feedPath, window.location.origin).toString();
-
-    try {
-      if (provider === "download") {
-        const exportEvents = scope === "month" ? getMonthlyExportEvents(events, month) : events;
-        downloadICS(
-          generateICS(exportEvents, new Date(), scope === "month" ? `${monthLabel} Esports Calendar` : "Esports Calendar"),
-          scope === "month" ? `esports-calendar-${month}.ics` : "esports-calendar-full.ics",
-        );
-        setNotice("Your calendar file has been downloaded.");
-        return;
-      }
-
-      if (provider === "apple") {
-        void copyText(feedUrl);
-        window.location.href = feedUrl.replace(/^https?:/, "webcal:");
-        setNotice("Opening Apple Calendar. The feed address was also copied.");
-        return;
-      }
-
-      const providerUrl = provider === "google"
-        ? "https://calendar.google.com/calendar/u/0/r/settings/addbyurl"
-        : "https://outlook.live.com/calendar/0/view/month";
-      window.open(providerUrl, "_blank", "noopener,noreferrer");
-      await copyText(feedUrl);
-      setNotice(provider === "google"
-        ? "Feed copied — paste it into Google Calendar’s ‘From URL’ field."
-        : "Feed copied — choose Add calendar → Subscribe from web, then paste it.");
-    } finally {
-      setWorking(null);
-    }
+    const exportEvents = scope === "month" ? getMonthlyExportEvents(events, month) : events;
+    downloadICS(
+      generateICS(exportEvents, new Date(), calendarName),
+      scope === "month" ? `esports-calendar-${month}.ics` : "esports-calendar-full.ics",
+    );
+    setNotice("Your calendar file has been downloaded.");
   };
 
   const copyFeed = async () => {
-    await copyText(new URL(feedPath, window.location.origin).toString());
+    await copyText(feedUrl);
     setNotice("Live calendar feed address copied.");
   };
 
@@ -138,17 +121,23 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
             <div className="calendar-provider-grid">
               {(["google", "apple", "outlook"] as CalendarProvider[]).map((provider) => {
                 const meta = providerMeta[provider];
-                const busy = working === provider;
                 return (
-                  <button key={provider} type="button" onClick={() => handleProvider(provider)} disabled={working !== null} className={`calendar-provider calendar-provider--${provider}`}>
-                    <span className="calendar-provider__mark">{busy ? <i /> : meta.mark}</span>
+                  <a
+                    key={provider}
+                    href={providerLinks[provider as Exclude<CalendarProvider, "download">]}
+                    target={provider === "apple" ? undefined : "_blank"}
+                    rel="noopener noreferrer"
+                    onClick={() => { void copyText(feedUrl); setNotice("The live feed was copied as a fallback in case your calendar does not prefill it."); }}
+                    className={`calendar-provider calendar-provider--${provider}`}
+                  >
+                    <span className="calendar-provider__mark"><img src={meta.logo} alt="" aria-hidden="true" /></span>
                     <span><strong>{meta.name}</strong><small>{meta.description}</small></span>
                     <ExternalLink className="calendar-provider__action" />
-                  </button>
+                  </a>
                 );
               })}
             </div>
-            <button type="button" onClick={() => handleProvider("download")} disabled={working !== null} className="calendar-download-fallback">
+            <button type="button" onClick={handleDownload} className="calendar-download-fallback">
               <span><Download /></span><div><strong>{providerMeta.download.name}</strong><small>{providerMeta.download.description} — it will not update automatically.</small></div><Download />
             </button>
           </section>
@@ -164,14 +153,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
                   <p><strong>Subscriptions stay current.</strong> If an event’s date, time or details change here, your calendar receives the update automatically.</p>
                   <p><strong>Refreshes are not instant.</strong> Google, Apple and Outlook decide when to check for changes, so an update can take several hours to appear.</p>
                   <p><strong>Downloads are snapshots.</strong> A downloaded .ics file never receives later changes; choose a provider subscription for automatic updates.</p>
+                  <p><strong>If your calendar does not open,</strong> use Copy feed below and paste the address into your calendar app’s “Subscribe from URL” option.</p>
                 </div>
               </details>
               <details>
                 <summary><span><Unlink />How to unsubscribe</span><ChevronDown /></summary>
                 <div className="calendar-unsubscribe-list">
-                  <div><b>G</b><p><strong>Google Calendar</strong><span>Open calendar settings, select the subscribed calendar, then choose Remove calendar → Unsubscribe.</span></p></div>
-                  <div><b>A</b><p><strong>Apple Calendar</strong><span>Open Calendars, tap or right-click the subscription, then choose Unsubscribe or Delete.</span></p></div>
-                  <div><b>O</b><p><strong>Outlook</strong><span>Open the subscribed calendar’s menu or settings, then choose Remove or Delete calendar.</span></p></div>
+                  <div><b><img src={providerMeta.google.logo} alt="" aria-hidden="true" /></b><p><strong>Google Calendar</strong><span>Open calendar settings, select the subscribed calendar, then choose Remove calendar → Unsubscribe.</span></p></div>
+                  <div><b><img src={providerMeta.apple.logo} alt="" aria-hidden="true" /></b><p><strong>Apple Calendar</strong><span>Open Calendars, tap or right-click the subscription, then choose Unsubscribe or Delete.</span></p></div>
+                  <div><b><img src={providerMeta.outlook.logo} alt="" aria-hidden="true" /></b><p><strong>Outlook</strong><span>Open the subscribed calendar’s menu or settings, then choose Remove or Delete calendar.</span></p></div>
                 </div>
               </details>
             </div>
