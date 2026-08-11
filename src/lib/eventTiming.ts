@@ -12,6 +12,21 @@ export function getEventTimezone(event: CalendarEvent): string {
   return event.recurrence?.timezone || event.location?.timezone || "UTC";
 }
 
+export function getTimezoneLabel(timezone: string, date = new Date()): string {
+  try {
+    const label = new Intl.DateTimeFormat("en-NG", {
+      timeZone: timezone,
+      timeZoneName: "short",
+    })
+      .formatToParts(date)
+      .find((part) => part.type === "timeZoneName")?.value;
+
+    return label || timezone;
+  } catch {
+    return timezone;
+  }
+}
+
 export function getEventTimes(event: CalendarEvent) {
   return {
     startTime: event.startTime || event.recurrence?.startTime || null,
