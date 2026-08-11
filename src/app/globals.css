@@ -974,6 +974,16 @@ body .font-display,
   .product-tour__copy h2 { font-size: 1.2rem; }
   .product-tour__copy p { font-size: .82rem; }
   .product-tour__footer { align-items: flex-end; }
+
+  /* iOS zooms focused form controls below 16px and may leave the sheet enlarged. */
+  .booking-drawer input,
+  .booking-drawer textarea,
+  .booking-drawer select,
+  .admin-editor-drawer input,
+  .admin-editor-drawer textarea,
+  .admin-editor-drawer select {
+    font-size: 16px !important;
+  }
 }
 .site-footer { margin-top:4rem; border-top:1px solid #202521; background:#050605; }
 .site-footer__inner { width:min(100%,1480px); margin:0 auto; padding:2.1rem 1.5rem 1.7rem; display:grid; grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr); align-items:end; gap:3rem; }
