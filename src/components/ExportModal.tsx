@@ -19,6 +19,7 @@ interface ExportModalProps {
 
 type ExportScope = "all" | "month";
 type CalendarProvider = "google" | "apple" | "outlook" | "download";
+type SubscriptionProvider = Exclude<CalendarProvider, "download">;
 
 const CALENDAR_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || "https://africabrcalender.vercel.app").replace(/\/$/, "");
 
@@ -59,18 +60,19 @@ async function copyText(value: string) {
 export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events, currentMonth }) => {
   const [scope, setScope] = useState<ExportScope>("all");
   const [notice, setNotice] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<SubscriptionProvider | null>(null);
 
   if (!open) return null;
 
   const month = format(currentMonth, "yyyy-MM");
   const monthLabel = format(currentMonth, "MMMM yyyy");
   const feedPath = scope === "month"
-    ? `/api/calendar?scope=month&month=${encodeURIComponent(month)}`
-    : "/api/calendar?scope=all";
+    ? `/calendar.ics?scope=month&month=${encodeURIComponent(month)}`
+    : "/calendar.ics";
   const feedUrl = `${CALENDAR_ORIGIN}${feedPath}`;
   const calendarName = scope === "month" ? `${monthLabel} Esports Calendar` : "Esports Calendar";
-  const providerLinks: Record<Exclude<CalendarProvider, "download">, string> = {
-    google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl)}`,
+  const providerLinks: Record<SubscriptionProvider, string> = {
+    google: "https://calendar.google.com/calendar/u/0/r/settings/addbyurl",
     apple: feedUrl.replace(/^https?:/, "webcal:"),
     outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(feedUrl)}&name=${encodeURIComponent(calendarName)}`,
   };
@@ -90,53 +92,98 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
     setNotice("Live calendar feed address copied.");
   };
 
+  const handleProviderClick = (provider: SubscriptionProvider) => {
+    setSelectedProvider(provider);
+    setNotice(null);
+  };
+
+  const providerInstructions: Record<SubscriptionProvider, { title: string; copy: React.ReactNode; note: string; action: string }> = {
+    google: {
+      title: "Add the schedule to Google Calendar",
+      copy: <>First copy the calendar URL below. Then continue to Google Calendar, paste it into <b>From URL</b>, and select <b>Add calendar</b>.</>,
+      note: "Google only accepts URL subscriptions on its desktop website. After adding it there, the calendar will also appear in the mobile app.",
+      action: "Continue to Google Calendar",
+    },
+    apple: {
+      title: "Add the schedule to Apple Calendar",
+      copy: <>Copy the calendar URL as a backup, then continue to Apple Calendar and confirm that you want to subscribe.</>,
+      note: "This creates a live subscription, so later event changes can refresh in Apple Calendar.",
+      action: "Continue to Apple Calendar",
+    },
+    outlook: {
+      title: "Add the schedule to Outlook",
+      copy: <>Copy the calendar URL as a backup, then continue to Outlook and confirm the calendar name and subscription.</>,
+      note: "Outlook controls how often subscribed calendars refresh, so updates may not appear immediately.",
+      action: "Continue to Outlook",
+    },
+  };
+
   return (
     <div className="calendar-modal-backdrop" onClick={onClose}>
       <div className="calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="calendar-dialog-title" onClick={(event) => event.stopPropagation()}>
         <header className="calendar-dialog__header">
           <span className="calendar-dialog__icon"><Calendar /></span>
           <div>
-            <span className="calendar-dialog__eyebrow">Live calendar sync</span>
-            <h2 id="calendar-dialog-title">Add the schedule</h2>
-            <p>Follow every event without checking back manually.</p>
+            <span className="calendar-dialog__eyebrow">Calendar subscription</span>
+            <h2 id="calendar-dialog-title">Follow the schedule</h2>
+            <p>Keep upcoming events in the calendar you already use.</p>
           </div>
           <button onClick={onClose} className="calendar-dialog__close" aria-label="Close calendar options"><X /></button>
         </header>
 
         <div className="calendar-dialog__body">
           <section className="calendar-step">
-            <header className="calendar-step__heading"><span>01</span><div><h3>Choose the schedule</h3><p>You can follow everything or only the month in view.</p></div></header>
+            <header className="calendar-step__heading"><div><h3>Schedule</h3><p>Follow everything, or keep the subscription limited to the current month.</p></div></header>
             <div className="calendar-scope-grid">
-              <button type="button" onClick={() => { setScope("all"); setNotice(null); }} className={scope === "all" ? "is-selected" : ""}>
+              <button type="button" onClick={() => { setScope("all"); setNotice(null); setSelectedProvider(null); }} className={scope === "all" ? "is-selected" : ""}>
                 <span><RefreshCw /></span><div><strong>Full schedule</strong><small>All current and future events</small></div>{scope === "all" && <Check />}
               </button>
-              <button type="button" onClick={() => { setScope("month"); setNotice(null); }} className={scope === "month" ? "is-selected" : ""}>
+              <button type="button" onClick={() => { setScope("month"); setNotice(null); setSelectedProvider(null); }} className={scope === "month" ? "is-selected" : ""}>
                 <span><Calendar /></span><div><strong>{monthLabel}</strong><small>Only this month’s schedule</small></div>{scope === "month" && <Check />}
               </button>
             </div>
           </section>
 
           <section className="calendar-step">
-            <header className="calendar-step__heading"><span>02</span><div><h3>Choose your calendar</h3><p>Subscriptions stay connected when event details change.</p></div></header>
+            <header className="calendar-step__heading"><div><h3>Calendar app</h3><p>Subscriptions stay connected when event details change.</p></div></header>
             <div className="calendar-provider-grid">
-              {(["google", "apple", "outlook"] as CalendarProvider[]).map((provider) => {
+              {(["google", "apple", "outlook"] as SubscriptionProvider[]).map((provider) => {
                 const meta = providerMeta[provider];
                 return (
-                  <a
+                  <button
                     key={provider}
-                    href={providerLinks[provider as Exclude<CalendarProvider, "download">]}
-                    target={provider === "apple" ? undefined : "_blank"}
-                    rel="noopener noreferrer"
-                    onClick={() => { void copyText(feedUrl); setNotice("The live feed was copied as a fallback in case your calendar does not prefill it."); }}
-                    className={`calendar-provider calendar-provider--${provider}`}
+                    onClick={() => handleProviderClick(provider)}
+                    type="button"
+                    aria-expanded={selectedProvider === provider}
+                    className={`calendar-provider calendar-provider--${provider}${selectedProvider === provider ? " is-selected" : ""}`}
                   >
                     <span className="calendar-provider__mark"><img src={meta.logo} alt="" aria-hidden="true" /></span>
                     <span><strong>{meta.name}</strong><small>{meta.description}</small></span>
-                    <ExternalLink className="calendar-provider__action" />
-                  </a>
+                    <ChevronDown className="calendar-provider__action" />
+                  </button>
                 );
               })}
             </div>
+            {selectedProvider && (
+              <div className="calendar-provider-setup" role="region" aria-live="polite">
+                <img src={providerMeta[selectedProvider].logo} alt="" aria-hidden="true" />
+                <div>
+                  <strong>{providerInstructions[selectedProvider].title}</strong>
+                  <p>{providerInstructions[selectedProvider].copy}</p>
+                  <small>{providerInstructions[selectedProvider].note}</small>
+                  <div className="calendar-provider-setup__actions">
+                    <button type="button" onClick={copyFeed}><Copy />Copy calendar URL</button>
+                    <a
+                      href={providerLinks[selectedProvider]}
+                      target={selectedProvider === "apple" ? undefined : "_blank"}
+                      rel="noopener noreferrer"
+                    >
+                      {providerInstructions[selectedProvider].action}<ExternalLink />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
             <button type="button" onClick={handleDownload} className="calendar-download-fallback">
               <span><Download /></span><div><strong>{providerMeta.download.name}</strong><small>{providerMeta.download.description} — it will not update automatically.</small></div><Download />
             </button>
@@ -145,7 +192,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
           {notice && <div className="calendar-export-notice" role="status"><Check /><span>{notice}</span></div>}
 
           <section className="calendar-step calendar-step--guide">
-            <header className="calendar-step__heading"><span>03</span><div><h3>Know how it works</h3><p>Syncing and removal stay under your control.</p></div></header>
+            <header className="calendar-step__heading"><div><h3>About subscriptions</h3><p>Syncing and removal stay under your control.</p></div></header>
             <div className="calendar-guide-list">
               <details open>
                 <summary><span><RefreshCw />How syncing works</span><ChevronDown /></summary>
