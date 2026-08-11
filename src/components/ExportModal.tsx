@@ -72,7 +72,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
   const feedUrl = `${CALENDAR_ORIGIN}${feedPath}`;
   const calendarName = scope === "month" ? `${monthLabel} Esports Calendar` : "Esports Calendar";
   const providerLinks: Record<SubscriptionProvider, string> = {
-    google: "https://calendar.google.com/calendar/u/0/r/settings/addbyurl",
+    google: "https://calendar.google.com/calendar/u/0/r/settings/addbyurl?pli=1",
     apple: feedUrl.replace(/^https?:/, "webcal:"),
     outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(feedUrl)}&name=${encodeURIComponent(calendarName)}`,
   };
@@ -100,9 +100,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
   const providerInstructions: Record<SubscriptionProvider, { title: string; copy: React.ReactNode; note: string; action: string }> = {
     google: {
       title: "Add the schedule to Google Calendar",
-      copy: <>First copy the calendar URL below. Then continue to Google Calendar, paste it into <b>From URL</b>, and select <b>Add calendar</b>.</>,
-      note: "Google only accepts URL subscriptions on its desktop website. After adding it there, the calendar will also appear in the mobile app.",
-      action: "Continue to Google Calendar",
+      copy: <>On a computer, copy the calendar URL below. Then open Google Calendar’s <b>From URL</b> settings, paste it, and select <b>Add calendar</b>.</>,
+      note: "Google does not allow new URL subscriptions in its Android, iPhone or iPad app. Add it once from a computer browser and it will then appear in the mobile app.",
+      action: "Open From URL settings",
     },
     apple: {
       title: "Add the schedule to Apple Calendar",
@@ -150,40 +150,45 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
               {(["google", "apple", "outlook"] as SubscriptionProvider[]).map((provider) => {
                 const meta = providerMeta[provider];
                 return (
-                  <button
-                    key={provider}
-                    onClick={() => handleProviderClick(provider)}
-                    type="button"
-                    aria-expanded={selectedProvider === provider}
-                    className={`calendar-provider calendar-provider--${provider}${selectedProvider === provider ? " is-selected" : ""}`}
-                  >
-                    <span className="calendar-provider__mark"><img src={meta.logo} alt="" aria-hidden="true" /></span>
-                    <span><strong>{meta.name}</strong><small>{meta.description}</small></span>
-                    <ChevronDown className="calendar-provider__action" />
-                  </button>
+                  <React.Fragment key={provider}>
+                    <button
+                      onClick={() => handleProviderClick(provider)}
+                      type="button"
+                      aria-expanded={selectedProvider === provider}
+                      className={`calendar-provider calendar-provider--${provider}${selectedProvider === provider ? " is-selected" : ""}`}
+                    >
+                      <span className="calendar-provider__mark"><img src={meta.logo} alt="" aria-hidden="true" /></span>
+                      <span><strong>{meta.name}</strong><small>{meta.description}</small></span>
+                      <ChevronDown className="calendar-provider__action" />
+                    </button>
+                    {selectedProvider === provider && (
+                      <div className="calendar-provider-setup" role="region" aria-live="polite">
+                        <img src={meta.logo} alt="" aria-hidden="true" />
+                        <div>
+                          <strong>{providerInstructions[provider].title}</strong>
+                          <p>{providerInstructions[provider].copy}</p>
+                          <small>{providerInstructions[provider].note}</small>
+                          <div className="calendar-provider-setup__actions">
+                            <button type="button" onClick={copyFeed}><Copy />Copy calendar URL</button>
+                            <a
+                              href={providerLinks[provider]}
+                              target={provider === "apple" ? undefined : "_blank"}
+                              rel="noopener noreferrer"
+                              className={provider === "google" ? "calendar-provider-setup__google-link" : undefined}
+                            >
+                              {providerInstructions[provider].action}<ExternalLink />
+                            </a>
+                            {provider === "google" && (
+                              <span className="calendar-provider-setup__mobile-limit"><Calendar />Use a computer to continue</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>
-            {selectedProvider && (
-              <div className="calendar-provider-setup" role="region" aria-live="polite">
-                <img src={providerMeta[selectedProvider].logo} alt="" aria-hidden="true" />
-                <div>
-                  <strong>{providerInstructions[selectedProvider].title}</strong>
-                  <p>{providerInstructions[selectedProvider].copy}</p>
-                  <small>{providerInstructions[selectedProvider].note}</small>
-                  <div className="calendar-provider-setup__actions">
-                    <button type="button" onClick={copyFeed}><Copy />Copy calendar URL</button>
-                    <a
-                      href={providerLinks[selectedProvider]}
-                      target={selectedProvider === "apple" ? undefined : "_blank"}
-                      rel="noopener noreferrer"
-                    >
-                      {providerInstructions[selectedProvider].action}<ExternalLink />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
             <button type="button" onClick={handleDownload} className="calendar-download-fallback">
               <span><Download /></span><div><strong>{providerMeta.download.name}</strong><small>{providerMeta.download.description} — it will not update automatically.</small></div><Download />
             </button>
