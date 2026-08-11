@@ -52,6 +52,11 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   const [bookEventOpen, setBookEventOpen] = useState(false);
   const [dayPopover, setDayPopover] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
 
+  const closeWalkthrough = useCallback(() => {
+    setWalkthroughOpen(false);
+    try { window.localStorage.setItem("esports-calendar-tour-v1", "seen"); } catch { /* Storage may be unavailable. */ }
+  }, []);
+
   // Scroll ref passed into GridView
   const scrollFnRef = useRef<((dir: "prev" | "next" | "today") => void) | null>(null);
 
@@ -62,6 +67,14 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
+  }, []);
+
+  useEffect(() => {
+    let hasSeenTour = false;
+    try { hasSeenTour = window.localStorage.getItem("esports-calendar-tour-v1") === "seen"; } catch { /* Show the tour when storage is unavailable. */ }
+    if (hasSeenTour) return;
+    const timer = window.setTimeout(() => setWalkthroughOpen(true), 800);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // ─── Fetch ALL events for grid view ──────────────────
@@ -189,6 +202,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         />
 
         {/* Content */}
+        <div data-tour="schedule">
         {loading ? (
           <div className="loading-state">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -223,6 +237,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         ) : (
           <ListView events={filteredEvents} onSelectEvent={setSelectedEvent} />
         )}
+        </div>
       </main>
 
       <Footer />
@@ -245,7 +260,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         currentMonth={currentDate}
       />
 
-      <WalkthroughModal open={walkthroughOpen} onClose={() => setWalkthroughOpen(false)} />
+      <WalkthroughModal open={walkthroughOpen} onClose={closeWalkthrough} />
 
       <BookEventModal
         open={bookEventOpen}

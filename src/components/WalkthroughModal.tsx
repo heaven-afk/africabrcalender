@@ -1,7 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, LayoutGrid, CalendarDays, Rows3, Trophy, MousePointer, ChevronRight } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  LayoutGrid,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 interface WalkthroughModalProps {
   open: boolean;
@@ -10,120 +19,165 @@ interface WalkthroughModalProps {
 
 const STEPS = [
   {
-    icon: <div className="flex items-center gap-1.5">
-      <LayoutGrid className="w-5 h-5 text-[#c9ff70]" />
-      <Rows3 className="w-5 h-5 text-[#c9ff70]" />
-      <CalendarDays className="w-5 h-5 text-[#c9ff70]" />
-      <Trophy className="w-5 h-5 text-[#c9ff70]" />
-    </div>,
-    title: "Four views, one schedule",
-    body: "Use Year for the big picture, Agenda for a clean event feed, Week for immediate planning, and Events to follow multi-stage competitions.",
-    highlight: "toolbar",
+    target: '[data-tour="views"]',
+    eyebrow: "Choose your view",
+    title: "The same schedule, your way",
+    body: "Move between the full year, agenda, week and event-series views. Your filters stay with you while you switch.",
+    icon: LayoutGrid,
   },
   {
-    icon: <MousePointer className="w-6 h-6 text-[#c9ff70]" />,
-    title: "Open any event day",
-    body: "Hover any highlighted day — like this — to see which tournaments are running, each with quick links to watch the broadcast and open its details page.",
-    highlight: "day",
+    target: '[data-tour="search"]',
+    eyebrow: "Find anything",
+    title: "Jump straight to an event",
+    body: "Search events from here. On desktop, Ctrl+K or ⌘K opens the same quick search without reaching for the mouse.",
+    icon: Search,
   },
   {
-    icon: <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#b8ff3d]/15 border border-[#b8ff3d]/40 text-[#c9ff70] text-sm font-bold">⌘K</div>,
-    title: "Jump anywhere instantly",
-    body: "Press ⌘K (or Ctrl+K on Windows) to open the command palette. Search any tournament name, region, or view to jump there immediately.",
-    highlight: "cmd",
+    target: '[data-tour="filters"]',
+    eyebrow: "Shape the schedule",
+    title: "Filter without losing context",
+    body: "Combine event types, games, esports regions and timing. Every selected filter updates all calendar views together.",
+    icon: SlidersHorizontal,
   },
   {
-    icon: <div className="flex items-center gap-1">
-      <span className="w-3 h-3 rounded-full bg-amber-400" />
-      <span className="w-3 h-3 rounded-full bg-[#b8ff3d]" />
-      <span className="w-3 h-3 rounded-full bg-emerald-400" />
-    </div>,
-    title: "Event types explained",
-    body: "Gold dots are Ranking events (ladders & leaderboards), Blue are Tournaments (prize pool competitions), and Green are Scrims (recurring team practice sessions).",
-    highlight: "legend",
+    target: '[data-tour="schedule"]',
+    eyebrow: "Explore the calendar",
+    title: "Open a day, then an event",
+    body: "Select any marked day to see its schedule. Event colours identify the category; open an event for times, game, streams and full details.",
+    icon: CalendarDays,
   },
-];
+  {
+    target: '[data-tour="export"]',
+    eyebrow: "Take it with you",
+    title: "Add the schedule to your calendar",
+    body: "Download the full schedule or just the month you are viewing as an .ics file for Google, Apple or Outlook Calendar.",
+    icon: Download,
+  },
+] as const;
+
+type SpotlightRect = { top: number; left: number; width: number; height: number };
 
 export const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose }) => {
   const [step, setStep] = useState(0);
+  const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
   const current = STEPS[step];
+  const CurrentIcon = current.icon;
   const isLast = step === STEPS.length - 1;
+
+  const getVisibleTarget = useCallback(() => {
+    return Array.from(document.querySelectorAll<HTMLElement>(current.target)).find((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && window.getComputedStyle(element).visibility !== "hidden";
+    }) ?? null;
+  }, [current.target]);
+
+  const measureTarget = useCallback(() => {
+    const target = getVisibleTarget();
+    if (!target) { setSpotlight(null); return; }
+    const rect = target.getBoundingClientRect();
+    const pad = window.innerWidth <= 760 ? 5 : 7;
+    setSpotlight({
+      top: Math.max(6, rect.top - pad),
+      left: Math.max(6, rect.left - pad),
+      width: Math.min(window.innerWidth - 12, rect.width + pad * 2),
+      height: Math.min(window.innerHeight - 12, rect.height + pad * 2),
+    });
+  }, [getVisibleTarget]);
+
+  useEffect(() => {
+    if (open) setStep(0);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const target = getVisibleTarget();
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const obscured = rect.top < 8 || rect.bottom > window.innerHeight - 230;
+      if (obscured) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    measureTarget();
+    const settle = window.setTimeout(measureTarget, 380);
+    window.addEventListener("resize", measureTarget);
+    window.addEventListener("scroll", measureTarget, true);
+    return () => {
+      window.clearTimeout(settle);
+      window.removeEventListener("resize", measureTarget);
+      window.removeEventListener("scroll", measureTarget, true);
+    };
+  }, [current.target, getVisibleTarget, measureTarget, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowRight") setStep((value) => Math.min(STEPS.length - 1, value + 1));
+      if (event.key === "ArrowLeft") setStep((value) => Math.max(0, value - 1));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
 
   if (!open) return null;
 
+  const cardStyle: React.CSSProperties = spotlight && typeof window !== "undefined" && window.innerWidth > 760
+    ? {
+        left: Math.min(Math.max(16, spotlight.left), window.innerWidth - 376),
+        top: spotlight.top + spotlight.height + 14 + 245 < window.innerHeight
+          ? spotlight.top + spotlight.height + 14
+          : Math.max(16, spotlight.top - 259),
+      }
+    : {};
+
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/80 animate-fadeIn"
-      onClick={onClose}
-    >
-      <div
-        className="match-dialog relative w-full max-w-sm p-5 animate-slideUp"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-4">
-          {/* Step dots */}
-          <div className="flex items-center gap-1.5">
-            {STEPS.map((_, i) => (
+    <div className="product-tour" role="dialog" aria-modal="true" aria-label="Calendar walkthrough">
+      <button className="product-tour__dismiss-area" onClick={onClose} aria-label="Close walkthrough" />
+
+      {spotlight && (
+        <div
+          className="product-tour__spotlight"
+          style={{
+            top: spotlight.top,
+            left: spotlight.left,
+            width: spotlight.width,
+            height: spotlight.height,
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      <section className="product-tour__card" style={cardStyle}>
+        <header className="product-tour__header">
+          <div className="product-tour__step-icon"><CurrentIcon aria-hidden="true" /></div>
+          <span>{step + 1} of {STEPS.length}</span>
+          <button onClick={onClose} aria-label="Close walkthrough"><X aria-hidden="true" /></button>
+        </header>
+
+        <div className="product-tour__copy">
+          <small>{current.eyebrow}</small>
+          <h2>{current.title}</h2>
+          <p>{current.body}</p>
+        </div>
+
+        <footer className="product-tour__footer">
+          <div className="product-tour__progress" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+            {STEPS.map((item, index) => (
               <button
-                key={i}
-                onClick={() => setStep(i)}
-                className={`rounded-full transition-all ${
-                  i === step
-                    ? "w-5 h-2 bg-[#b8ff3d]"
-                    : "w-2 h-2 bg-surface-border hover:bg-neutral-600"
-                }`}
+                key={item.target}
+                className={index === step ? "is-active" : index < step ? "is-complete" : ""}
+                onClick={() => setStep(index)}
+                aria-label={`Go to step ${index + 1}`}
               />
             ))}
           </div>
-          <button onClick={onClose} className="p-1 text-neutral-600 hover:text-neutral-300 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Icon */}
-        <div className="flex items-center justify-center mb-4">
-          {current.icon}
-        </div>
-
-        {/* Content */}
-        <h3 className="font-display font-bold text-white text-lg mb-2 tracking-wide">
-          {current.title}
-        </h3>
-        <p className="text-sm text-neutral-400 leading-relaxed mb-5">
-          {current.body}
-        </p>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
-          >
-            Skip
-          </button>
-          <div className="flex items-center gap-2">
-            {step > 0 && (
-              <button
-                onClick={() => setStep(step - 1)}
-                className="px-4 py-2 text-sm font-semibold text-neutral-400 hover:text-white bg-surface-elevated rounded-xl transition-colors"
-              >
-                Back
-              </button>
-            )}
-            <button
-              onClick={() => {
-                if (isLast) onClose();
-                else setStep(step + 1);
-              }}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-[#b8ff3d] rounded-lg hover:bg-[#d0ff7b] transition-colors"
-            >
-              {isLast ? "Done" : "Next"}
-              {!isLast && <ChevronRight className="w-3.5 h-3.5" />}
+          <div className="product-tour__actions">
+            {step > 0 && <button className="product-tour__back" onClick={() => setStep(step - 1)}><ChevronLeft />Back</button>}
+            <button className="product-tour__next" onClick={() => isLast ? onClose() : setStep(step + 1)}>
+              {isLast ? "Start exploring" : "Next"}{!isLast && <ChevronRight />}
             </button>
           </div>
-        </div>
-      </div>
+        </footer>
+      </section>
     </div>
   );
 };

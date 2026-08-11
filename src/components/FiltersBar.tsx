@@ -25,7 +25,7 @@ export const FiltersBar:React.FC<Props>=(props)=>{
     <div className="filter-group"><label><Gamepad2/>Games <small>{props.selectedGames.length?`${props.selectedGames.length} selected`:"Any game"}</small></label><div className="filter-choice-list">{GAME_OPTIONS.map(game=><button type="button" key={game.value} aria-pressed={props.selectedGames.includes(game.value)} className={props.selectedGames.includes(game.value)?"is-selected":""} onClick={()=>toggleGame(game.value)}>{game.logo&&<img src={game.logo} alt=""/>}<span>{game.label}</span>{props.selectedGames.includes(game.value)&&<Check/>}</button>)}</div></div>
     <div className="filter-group"><label><Clock3/>Schedule</label><div className="filter-segments">{(["all","live","upcoming","past"] as TimingFilter[]).map(value=><button type="button" key={value} className={props.timing===value?"is-selected":""} onClick={()=>props.onTimingChange(value)}>{value}</button>)}</div></div>
   </div></>;
-  return <section className="filter-deck" aria-label="Search and filter events" ref={root}>
+  return <section className="filter-deck" aria-label="Search and filter events" ref={root} data-tour="filters">
     <div className="filter-deck__top">
       <label className="event-search"><Search/><span className="sr-only">Search events</span><input value={props.search} onChange={event=>props.onSearchChange(event.target.value)} placeholder="Search by event, organization, game or stage"/>{props.search&&<button type="button" onClick={()=>props.onSearchChange("")} aria-label="Clear search"><X/></button>}<kbd>⌘ K</kbd></label>
       <div className="filter-more">

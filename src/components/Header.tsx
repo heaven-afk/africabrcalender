@@ -46,48 +46,79 @@ export const Header: React.FC<HeaderProps> = ({
   onExport,
   onWalkthrough,
   onBookEvent,
-}) => (
-  <header className="match-header">
-    <div className="match-header__inner">
-      <div className="header-primary">
-        <button className="brand-lockup" onClick={onToday} aria-label="Esports Calendar — return to today">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="brand-lockup__logo" src="/esports-calendar-logo.png" alt="Esports Calendar" />
+}) => {
+  const viewTabs = () => (
+    <nav className="view-tabs" aria-label="Calendar views" data-tour="views">
+      {VIEWS.map(({ id, icon: Icon, label }) => (
+        <button
+          key={id}
+          className={viewMode === id ? "is-active" : ""}
+          onClick={() => onViewModeChange(id)}
+          title={label}
+          aria-label={`${label} view`}
+          aria-current={viewMode === id ? "page" : undefined}
+        >
+          <Icon aria-hidden="true" /><span>{label}</span>
         </button>
+      ))}
+    </nav>
+  );
 
-        <nav className="view-tabs" aria-label="Calendar views">
-          {VIEWS.map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              className={viewMode === id ? "is-active" : ""}
-              onClick={() => onViewModeChange(id)}
-              title={label}
-              aria-label={`${label} view`}
-              aria-current={viewMode === id ? "page" : undefined}
-            >
-              <Icon aria-hidden="true" /><span>{label}</span>
+  const brand = () => (
+    <button className="brand-lockup" onClick={onToday} aria-label="Esports Calendar — return to today">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="brand-lockup__logo" src="/esports-calendar-logo.png" alt="Esports Calendar" />
+    </button>
+  );
+
+  const monthStepper = () => (
+    <div className="month-stepper">
+      <button onClick={() => onScrollToMonth("prev")} aria-label="Previous month"><ChevronLeft /></button>
+      <button className="month-stepper__label" onClick={onToday} aria-label="Return to current month">
+        <span>{format(currentDate, "MMM")}</span><strong>{format(currentDate, "yyyy")}</strong>
+      </button>
+      <button onClick={() => onScrollToMonth("next")} aria-label="Next month"><ChevronRight /></button>
+    </div>
+  );
+
+  return (
+    <header className="match-header">
+      <div className="match-header__inner">
+        <div className="header-desktop">
+          <div className="header-primary">
+            {brand()}
+            {viewTabs()}
+          </div>
+
+          <div className="header-context">
+            <button className="header-search" onClick={onCommandPalette} aria-label="Search events" data-tour="search">
+              <Search aria-hidden="true" /><span>Search events</span><kbd>⌘K</kbd>
             </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="header-context">
-        <button className="header-search" onClick={onCommandPalette} aria-label="Search events">
-          <Search aria-hidden="true" /><span>Search events</span><kbd>⌘K</kbd>
-        </button>
-
-        <div className="month-stepper">
-          <button onClick={() => onScrollToMonth("prev")} aria-label="Previous month"><ChevronLeft /></button>
-          <button className="month-stepper__label" onClick={onToday} aria-label="Return to current month">
-            <span>{format(currentDate, "MMM")}</span><strong>{format(currentDate, "yyyy")}</strong>
-          </button>
-          <button onClick={() => onScrollToMonth("next")} aria-label="Next month"><ChevronRight /></button>
+            {monthStepper()}
+            <div className="header-tools">
+              <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
+              <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
+            </div>
+            <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
+          </div>
         </div>
 
-        <button className="icon-action header-utility" onClick={onExport} aria-label="Export calendar" title="Export calendar"><Download /></button>
-        <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
-        <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
+        <div className="header-mobile">
+          <div className="header-mobile__top">
+            {brand()}
+            <div className="header-mobile__top-actions">
+              {monthStepper()}
+              <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
+              <button className="header-search" onClick={onCommandPalette} aria-label="Search events" data-tour="search"><Search aria-hidden="true" /></button>
+            </div>
+          </div>
+          <div className="header-mobile__bottom">
+            {viewTabs()}
+            <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
+            <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
+          </div>
+        </div>
       </div>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
