@@ -778,12 +778,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .date-ticket strong { font-size: 1.85rem; letter-spacing: -.06em; }
   .date-ticket small { margin: 0; color: var(--paper); font-size: .62rem; line-height: 1.2; text-align: right; }
   .next-match { min-height: 104px; padding: .85rem; gap: .5rem; border: 0; border-radius: 0; }
-  .next-match__identity { gap: .6rem; }
-  .next-match__identity > div:first-child { display: none; }
-  .next-match h2 { max-width: 50vw; font-size: 1.08rem; }
-  .next-match p { max-width: 50vw; font-size: .6rem; white-space: nowrap; overflow: hidden; }
-  .next-match__timing { gap: .4rem; }
-  .next-match__timing > svg { display: none; }
+  .next-match--live { min-height: 0; display: grid; grid-template-columns: minmax(0,1fr); align-items: stretch; gap: .75rem; }
+  .next-match__identity { width: 100%; display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: center; gap: .75rem; }
+  .next-match__identity > div:first-child { display: flex; }
+  .next-match h2 { max-width: none; font-size: 1.08rem; }
+  .next-match p { max-width: none; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
+  .next-match__timing { width: 100%; padding-top: .65rem; justify-content: space-between; gap: .65rem; border-top: 1px solid rgba(79,124,255,.16); }
+  .next-match__timing > svg { display: block; width: 17px; flex: 0 0 auto; }
+  .live-callout { min-width: 0; gap: .4rem; font-size: .64rem; letter-spacing: .055em; }
+  .live-callout span { width: 6px; height: 6px; flex: 0 0 auto; }
   .countdown { grid-template-columns: repeat(2, 37px); }
   .countdown > div { padding: .35rem .15rem; }
   .countdown strong { font-size: .78rem; }.countdown span { font-size: .4rem; }
