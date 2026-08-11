@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const title = "Esports Calendar — Your esports calendar";
+const description = "Discover and track esports tournaments, rankings, scrims, awards and broadcasts in one schedule.";
+
 export const metadata: Metadata = {
-  title: "Esports Calendar — Every tournament, one schedule",
-  description:
-    "A global calendar for esports tournaments, rankings, scrims, broadcasts, awards, and community events.",
+  title,
+  description,
   keywords: [
-    "Esports Calendar",
     "Esports Calendar",
     "CODM BR",
     "Battle Royale Tournaments",
@@ -14,6 +15,28 @@ export const metadata: Metadata = {
     "Scrim Schedule",
     "Ranking Ladder",
   ],
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png", sizes: "256x256" }],
+    apple: [{ url: "/favicon.png", type: "image/png", sizes: "256x256" }],
+  },
+  openGraph: {
+    title,
+    description,
+    type: "website",
+    siteName: "Esports Calendar",
+    images: [{
+      url: "/og.png",
+      width: 1729,
+      height: 910,
+      alt: "Esports Calendar — Your esports calendar",
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og.png"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,9 +59,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
