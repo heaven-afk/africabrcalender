@@ -116,20 +116,32 @@ export function getEventTimingStatus(event: CalendarEvent, now = new Date()): Ev
   if (event.recurrence) return getRecurringStatus(event, clock);
 
   const { startTime, endTime } = getEventTimes(event);
-  const startMinutes = startTime ? timeToMinutes(startTime) : 0;
-  const endMinutes = endTime ? timeToMinutes(endTime) : 1440;
-  let effectiveEndDate = event.endDate;
-  if (event.startDate === event.endDate && startTime && endTime && endMinutes <= startMinutes) {
-    effectiveEndDate = addDays(event.endDate, 1);
+  if (!startTime && !endTime) {
+    if (clock.date < event.startDate) return "upcoming";
+    if (clock.date > event.endDate) return "past";
+    return "live";
   }
 
-  if (clock.date < event.startDate || (clock.date === event.startDate && clock.minutes < startMinutes)) {
+  const startMinutes = startTime ? timeToMinutes(startTime) : 0;
+  const endMinutes = endTime ? timeToMinutes(endTime) : 1440;
+  const overnight = Boolean(startTime && endTime && endMinutes <= startMinutes);
+  const activeToday = clock.date >= event.startDate && clock.date <= event.endDate;
+  const previousDate = addDays(clock.date, -1);
+  const activeYesterday = previousDate >= event.startDate && previousDate <= event.endDate;
+
+  const live = overnight
+    ? (activeToday && clock.minutes >= startMinutes) ||
+      (activeYesterday && clock.minutes < endMinutes)
+    : activeToday && clock.minutes >= startMinutes && clock.minutes < endMinutes;
+
+  if (live) return "live";
+  if (clock.date < event.startDate) return "upcoming";
+  if (activeToday && clock.minutes < startMinutes) return "upcoming";
+  if (clock.date < event.endDate) return "upcoming";
+  if (overnight && clock.date === addDays(event.endDate, 1) && clock.minutes < endMinutes) {
     return "upcoming";
   }
-  if (clock.date > effectiveEndDate || (clock.date === effectiveEndDate && clock.minutes >= endMinutes)) {
-    return "past";
-  }
-  return "live";
+  return "past";
 }
 
 export function isEventLive(event: CalendarEvent, now = new Date()): boolean {
