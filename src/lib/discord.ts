@@ -2,12 +2,17 @@ import { CalendarEvent } from "@/types/event";
 
 const SITE_URL = "https://esportscalendar.org";
 const DISCORD_DEFAULT_AVATAR_URL = "https://res.cloudinary.com/id8ciytn/image/upload/v1786622214/esports-calendar/discord/avatar-v2.png";
+const DISCORD_DEFAULT_BANNER_URL = "https://res.cloudinary.com/id8ciytn/image/upload/v1786622216/esports-calendar/discord/banner-v2.jpg";
 
 function getSiteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || SITE_URL).replace(/\/$/, "");
 }
 function getAvatarUrl(): string {
   return process.env.DISCORD_AVATAR_URL || DISCORD_DEFAULT_AVATAR_URL;
+}
+
+function getBannerUrl(): string {
+  return process.env.DISCORD_BANNER_URL || DISCORD_DEFAULT_BANNER_URL;
 }
 
 function getComponentsWebhookUrl(webhookUrl: string): string {
@@ -25,12 +30,10 @@ export function buildDiscordEventPayload(
   titlePrefix: "New Event" | "Event Updated",
   event: CalendarEvent,
 ) {
-  const orgName = cleanText(event.orgName, 120) || "Community Event";
   const directUrl = `${getSiteUrl()}/?event=${encodeURIComponent(event.id)}&date=${encodeURIComponent(event.startDate)}`;
   const eventContent = [
     `## ${titlePrefix === "New Event" ? "New event added" : "Event updated"}`,
     `# ${cleanText(event.name)}`,
-    `**${orgName}**`,
     event.game ? `🎮 **Game:** ${cleanText(event.game, 100)}` : null,
     event.region ? `🌍 **Region:** ${cleanText(event.region, 100)}` : null,
   ].filter(Boolean).join("\n");
@@ -44,12 +47,20 @@ export function buildDiscordEventPayload(
       type: 17,
       components: [
         {
+          type: 12,
+          items: [{
+            media: { url: getBannerUrl() },
+            description: "Esports Calendar",
+          }],
+        },
+        { type: 14, divider: true, spacing: 1 },
+        {
           type: 9,
           components: [{ type: 10, content: eventContent }],
           accessory: {
             type: 11,
             media: { url: event.orgLogoUrl || getAvatarUrl() },
-            description: event.orgLogoUrl ? `${orgName} logo` : "Esports Calendar",
+            description: event.orgLogoUrl ? "Event organization logo" : "Esports Calendar",
           },
         },
         { type: 14, divider: true, spacing: 1 },
