@@ -1,6 +1,9 @@
 import { getEventTimes, getEventTimezone } from "@/lib/eventTiming";
 import { CalendarEvent } from "@/types/event";
 
+const DISCORD_DEFAULT_AVATAR_URL = "https://res.cloudinary.com/id8ciytn/image/upload/v1786622214/esports-calendar/discord/avatar-v2.png";
+const DISCORD_DEFAULT_BANNER_URL = "https://res.cloudinary.com/id8ciytn/image/upload/v1786622216/esports-calendar/discord/banner-v2.jpg";
+
 function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   if (process.env.VERCEL_URL) {
@@ -15,11 +18,11 @@ function getSiteUrl(): string {
 function getBannerUrl(): string {
   return process.env.DISCORD_BANNER_URL
     || process.env.NEXT_PUBLIC_SITE_BANNER_URL
-    || `${getSiteUrl()}/discord-calendar-banner.jpg`;
+    || DISCORD_DEFAULT_BANNER_URL;
 }
 
 function getAvatarUrl(): string {
-  return process.env.DISCORD_AVATAR_URL || `${getSiteUrl()}/favicon.png`;
+  return process.env.DISCORD_AVATAR_URL || DISCORD_DEFAULT_AVATAR_URL;
 }
 
 function getComponentsWebhookUrl(webhookUrl: string): string {
