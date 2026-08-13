@@ -2,7 +2,7 @@ import "server-only";
 
 import { NextRequest } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
-import { AnalyticsBreakdownRow, AnalyticsMetric, AnalyticsPoint, AnalyticsReport } from "@/types/analytics";
+import { AnalyticsBreakdownRow, AnalyticsEventPerformance, AnalyticsMetric, AnalyticsPoint, AnalyticsReport } from "@/types/analytics";
 
 type SessionRow = {
   session_id: string; visitor_id: string; started_at: string; last_seen_at: string;
@@ -144,6 +144,54 @@ function applyFilters(rows: SessionRow[], filters: Record<string, string>) {
   return rows.filter((row) => (!filters.country || row.country_code === filters.country) && (!filters.source || row.source === filters.source) && (!filters.device || row.device_type === filters.device));
 }
 
+function eventDataText(row: EventRow, key: string) {
+  const value = row.event_data?.[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function eventPerformance(current: EventRow[], previous: EventRow[]): AnalyticsEventPerformance[] {
+  const groups = new Map<string, { name: string; latestAt: string; views: number; visitors: Set<string>; sessions: Set<string> }>();
+  const previousViews = new Map<string, number>();
+
+  current.forEach((row) => {
+    const eventId = eventDataText(row, "eventId");
+    if (!eventId) return;
+    const currentGroup = groups.get(eventId) || { name: "Untitled event", latestAt: "", views: 0, visitors: new Set<string>(), sessions: new Set<string>() };
+    currentGroup.views += 1;
+    currentGroup.visitors.add(row.visitor_id);
+    currentGroup.sessions.add(row.session_id);
+    if (row.occurred_at >= currentGroup.latestAt) {
+      currentGroup.latestAt = row.occurred_at;
+      currentGroup.name = eventDataText(row, "eventName") || currentGroup.name;
+    }
+    groups.set(eventId, currentGroup);
+  });
+  previous.forEach((row) => {
+    const eventId = eventDataText(row, "eventId");
+    if (eventId) previousViews.set(eventId, (previousViews.get(eventId) || 0) + 1);
+  });
+
+  const totalViews = Array.from(groups.values()).reduce((sum, group) => sum + group.views, 0) || 1;
+  return Array.from(groups.entries())
+    .map(([eventId, group]) => {
+      const previousCount = previousViews.get(eventId) || 0;
+      return {
+        eventId,
+        eventName: group.name,
+        rank: 0,
+        views: group.views,
+        uniqueViewers: group.visitors.size,
+        sessions: group.sessions.size,
+        percentage: (group.views / totalViews) * 100,
+        previousViews: previousCount,
+        change: previousCount === 0 ? (group.views === 0 ? 0 : null) : ((group.views - previousCount) / previousCount) * 100,
+      };
+    })
+    .sort((a, b) => b.views - a.views || b.uniqueViewers - a.uniqueViewers || a.eventName.localeCompare(b.eventName))
+    .slice(0, 20)
+    .map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
 export async function buildAnalyticsReport(start: Date, end: Date, filters: Record<string, string>): Promise<AnalyticsReport> {
   const durationMs = end.getTime() - start.getTime();
   const previousEnd = new Date(start.getTime() - 1);
@@ -199,6 +247,7 @@ export async function buildAnalyticsReport(start: Date, end: Date, filters: Reco
     entryPages: breakdown(currentSessions, (row) => row.entry_path, (row) => row.visitor_id, 12),
     exitPages: breakdown(currentSessions, (row) => row.exit_path, (row) => row.visitor_id, 12),
     actions: breakdown(actions, (row) => row.event_name.replaceAll("_", " "), (row) => row.visitor_id, 12),
+    mostViewedEvents: eventPerformance(eventViews, previousEventViews),
     funnel: [
       { label: "Sessions", value: currentSessions.length, percentage: 100 },
       { label: "Engaged", value: engagedIds.size, percentage: (engagedIds.size / funnelBase) * 100 },

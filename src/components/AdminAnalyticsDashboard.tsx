@@ -58,6 +58,21 @@ function TrendChart({ report }: { report: AnalyticsReport }) {
   </div>;
 }
 
+function MostViewedEvents({ report }: { report: AnalyticsReport }) {
+  if (!report.mostViewedEvents.length) return <div className="analytics-empty"><Eye /><span>No event views for this period</span></div>;
+  return <div className="analytics-event-table">
+    <div className="analytics-event-table__head"><span>Event</span><span>Views</span><span>Viewers</span><span>Sessions</span><span>Share</span><span>Change</span></div>
+    {report.mostViewedEvents.map((event) => <div className="analytics-event-row" key={event.eventId}>
+      <div className="analytics-event-row__name"><b>{event.rank}</b><span><strong>{event.eventName}</strong><small>{event.percentage.toFixed(1)}% of event views</small></span></div>
+      <div data-label="Views"><strong>{formatNumber(event.views)}</strong><small>opens</small></div>
+      <div data-label="Viewers"><strong>{formatNumber(event.uniqueViewers)}</strong><small>unique</small></div>
+      <div data-label="Sessions"><strong>{formatNumber(event.sessions)}</strong><small>visits</small></div>
+      <div data-label="Share"><strong>{event.percentage.toFixed(1)}%</strong><small>of total</small></div>
+      <div data-label="Change"><Change value={event.change} /></div>
+    </div>)}
+  </div>;
+}
+
 export function AdminAnalyticsDashboard() {
   const initial = presetDates("30d");
   const [preset, setPreset] = useState<Preset>("30d");
@@ -125,6 +140,8 @@ export function AdminAnalyticsDashboard() {
 
       <TrendChart report={report} />
 
+      <details className="analytics-panel analytics-events-panel" open><summary><span><Eye />Most viewed events</span><ChevronDown /></summary><div className="analytics-panel__body"><MostViewedEvents report={report} /></div></details>
+
       <div className="analytics-grid analytics-grid--two">
         <details className="analytics-panel" open><summary><span><Route />Traffic acquisition</span><ChevronDown /></summary><div className="analytics-panel__body"><Breakdown rows={report.sources} /></div></details>
         <details className="analytics-panel" open><summary><span><Globe2 />Countries</span><ChevronDown /></summary><div className="analytics-panel__body"><Breakdown rows={report.countries} country /></div></details>
@@ -144,4 +161,3 @@ export function AdminAnalyticsDashboard() {
     </>}
   </section>;
 }
-
