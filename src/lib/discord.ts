@@ -1,20 +1,95 @@
 import { CalendarEvent } from "@/types/event";
 
-function getCategoryColor(category: string): number {
-  switch (category) {
-    case "ranking":
-      return 0x4F7CFF; // Brand blue #4F7CFF
-    case "tournament":
-      return 0x06b6d4; // Cyan #06B6D4
-    case "scrim":
-      return 0x10b981; // Emerald #10B981
-    default:
-      return 0x4F7CFF;
+function getSiteUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }
+  if (process.env.VERCEL_URL) {
+    const vercelUrl = process.env.VERCEL_URL.startsWith("http")
+      ? process.env.VERCEL_URL
+      : `https://${process.env.VERCEL_URL}`;
+    return vercelUrl.replace(/\/$/, "");
+  }
+  return "https://africa-br-calendar.vercel.app";
+}
+
+function getBannerUrl(): string {
+  if (process.env.DISCORD_BANNER_URL) {
+    return process.env.DISCORD_BANNER_URL;
+  }
+  if (process.env.NEXT_PUBLIC_SITE_BANNER_URL) {
+    return process.env.NEXT_PUBLIC_SITE_BANNER_URL;
+  }
+  return `${getSiteUrl()}/og.png`;
+}
+
+function getAvatarUrl(): string {
+  if (process.env.DISCORD_AVATAR_URL) {
+    return process.env.DISCORD_AVATAR_URL;
+  }
+  return `${getSiteUrl()}/favicon.png`;
 }
 
 /**
- * Send Discord Webhook Embed notification for a newly created event
+ * Builds a Discord Components V2 Container payload for an event notification
+ */
+function buildComponentsV2Payload(
+  titlePrefix: "New Event" | "Event Updated",
+  event: CalendarEvent
+) {
+  const categoryUpper = event.category ? event.category.toUpperCase() : "EVENT";
+  const orgName = event.orgName?.trim() || "Community Event";
+  const dateRange = `${event.startDate} to ${event.endDate}`;
+  const directUrl = `${getSiteUrl()}/?event=${encodeURIComponent(event.id)}`;
+
+  const textContent = `**${titlePrefix}: ${event.name}**\n${orgName} • ${categoryUpper}\n${dateRange}`;
+
+  return {
+    username: "Africa BR Calendar",
+    avatar_url: getAvatarUrl(),
+    flags: 32768, // IS_COMPONENTS_V2
+    components: [
+      {
+        type: 17, // Container
+        components: [
+          {
+            type: 12, // Media Gallery
+            items: [
+              {
+                media: {
+                  url: getBannerUrl(),
+                },
+              },
+            ],
+          },
+          {
+            type: 14, // Separator
+            divider: true,
+            spacing: 1,
+          },
+          {
+            type: 10, // Text Display
+            content: textContent,
+          },
+          {
+            type: 1, // Action Row
+            components: [
+              {
+                type: 2, // Button
+                style: 5, // Link Button
+                label: "View Event",
+                url: directUrl,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * Send Discord Webhook notification using Components V2 Container format for a newly created event
  */
 export async function sendDiscordCreateNotification(event: CalendarEvent): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -23,69 +98,32 @@ export async function sendDiscordCreateNotification(event: CalendarEvent): Promi
     return;
   }
 
-  const categoryUpper = event.category.toUpperCase();
-  const dateRange =
-    event.category === "scrim" && event.recurrence
-      ? `${event.startDate} to ${event.endDate} (${event.recurrence.startTime} - ${event.recurrence.endTime} ${event.recurrence.timezone})`
-      : `${event.startDate} to ${event.endDate}`;
-
-  const fields = [
-    { name: "🏆 Organization", value: event.orgName || "N/A", inline: true },
-    { name: "🏷️ Category", value: `**${categoryUpper}**`, inline: true },
-    { name: "📅 Schedule / Dates", value: dateRange, inline: false },
-  ];
-
-  if (event.stage) {
-    fields.push({ name: "⚡ Stage / Phase", value: event.stage, inline: true });
-  }
-
-  if (event.region) {
-    fields.push({ name: "🌍 Region", value: event.region, inline: true });
-  }
-
-  if (event.streamLinks && event.streamLinks.length > 0) {
-    const streams = event.streamLinks
-      .map((s) => `• [${s.label || "Watch Stream"}](${s.url})`)
-      .join("\n");
-    fields.push({ name: "📺 Broadcast Streams", value: streams, inline: false });
-  }
-
-  if (event.location?.discordUrl || event.location?.websiteUrl) {
-    const links = [];
-    if (event.location.discordUrl) links.push(`[Discord Server](${event.location.discordUrl})`);
-    if (event.location.websiteUrl) links.push(`[Official Website](${event.location.websiteUrl})`);
-    fields.push({ name: "🔗 Community Links", value: links.join(" • "), inline: false });
-  }
-
-  const embed = {
-    title: `📢 New Event Scheduled: ${event.name}`,
-    description: `A new **${event.category}** event has been listed on the Africa BR Calendar!`,
-    color: getCategoryColor(event.category),
-    fields: fields,
-    thumbnail: event.orgLogoUrl ? { url: event.orgLogoUrl } : undefined,
-    footer: {
-      text: "Africa BR Calendar • Powered by Nova Technologies",
-    },
-    timestamp: new Date().toISOString(),
-  };
+  const payload = buildComponentsV2Payload("New Event", event);
 
   try {
-    await fetch(webhookUrl, {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify(payload),
     });
-    console.log(`[Discord Webhook] Sent create notification for event: ${event.name}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[Discord Webhook] Error ${res.status}: ${errorText}`);
+      return;
+    }
+
+    console.log(`[Discord Webhook] Components V2 create notice sent for: ${event.name}`);
   } catch (error) {
     console.error("[Discord Webhook] Failed to post webhook:", error);
   }
 }
 
 /**
- * Send Discord Webhook Embed notification when an existing event is edited
+ * Send Discord Webhook notification using Components V2 Container format when an event is edited
  */
 export async function sendDiscordEditNotification(
-  oldEvent: CalendarEvent,
+  _oldEvent: CalendarEvent,
   newEvent: CalendarEvent
 ): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -94,69 +132,22 @@ export async function sendDiscordEditNotification(
     return;
   }
 
-  const changes: string[] = [];
-
-  if (oldEvent.name !== newEvent.name) {
-    changes.push(`• **Title**: ${oldEvent.name} ➔ **${newEvent.name}**`);
-  }
-  if (oldEvent.category !== newEvent.category) {
-    changes.push(`• **Category**: ${oldEvent.category} ➔ **${newEvent.category}**`);
-  }
-  if (oldEvent.stage !== newEvent.stage) {
-    changes.push(`• **Stage**: ${oldEvent.stage || "None"} ➔ **${newEvent.stage || "None"}**`);
-  }
-  if (oldEvent.startDate !== newEvent.startDate || oldEvent.endDate !== newEvent.endDate) {
-    changes.push(
-      `• **Dates**: ${oldEvent.startDate} - ${oldEvent.endDate} ➔ **${newEvent.startDate} - ${newEvent.endDate}**`
-    );
-  }
-
-  if (oldEvent.category === "scrim" && newEvent.category === "scrim" && newEvent.recurrence) {
-    const oldRec = oldEvent.recurrence;
-    const newRec = newEvent.recurrence;
-    if (
-      oldRec?.startTime !== newRec.startTime ||
-      oldRec?.endTime !== newRec.endTime ||
-      oldRec?.timezone !== newRec.timezone
-    ) {
-      changes.push(
-        `• **Scrim Hours**: ${oldRec?.startTime}-${oldRec?.endTime} (${oldRec?.timezone}) ➔ **${newRec.startTime}-${newRec.endTime} (${newRec.timezone})**`
-      );
-    }
-  }
-
-  // If no significant fields changed, don't spam webhook
-  if (changes.length === 0) {
-    changes.push("• Event details updated.");
-  }
-
-  const embed = {
-    title: `✏️ Event Updated: ${newEvent.name}`,
-    description: `Updates made to **${newEvent.name}**:\n\n${changes.join("\n")}`,
-    color: getCategoryColor(newEvent.category),
-    fields: [
-      { name: "🏆 Organization", value: newEvent.orgName, inline: true },
-      { name: "🏷️ Category", value: newEvent.category.toUpperCase(), inline: true },
-      {
-        name: "📅 Active Range",
-        value: `${newEvent.startDate} to ${newEvent.endDate}`,
-        inline: false,
-      },
-    ],
-    thumbnail: newEvent.orgLogoUrl ? { url: newEvent.orgLogoUrl } : undefined,
-    footer: {
-      text: "Africa BR Calendar • Edited Event Notice",
-    },
-    timestamp: new Date().toISOString(),
-  };
+  const payload = buildComponentsV2Payload("Event Updated", newEvent);
 
   try {
-    await fetch(webhookUrl, {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify(payload),
     });
-    console.log(`[Discord Webhook] Sent edit notification for event: ${newEvent.name}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[Discord Webhook] Error ${res.status}: ${errorText}`);
+      return;
+    }
+
+    console.log(`[Discord Webhook] Components V2 edit notice sent for: ${newEvent.name}`);
   } catch (error) {
     console.error("[Discord Webhook] Failed to post edit webhook:", error);
   }
