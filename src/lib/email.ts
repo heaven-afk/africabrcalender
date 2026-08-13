@@ -22,7 +22,7 @@ export async function sendBookingStatusEmail({
     
     console.log(`
 =================================================================
-[AFRICA BR CALENDAR EMAIL NOTIFICATION]
+[ESPORTS CALENDAR EMAIL NOTIFICATION]
 Timestamp: ${new Date().toISOString()}
 To: ${to}
 Subject: ${subject}

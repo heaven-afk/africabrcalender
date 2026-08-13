@@ -1,4 +1,4 @@
--- ─── SUPABASE POSTGRESQL SCHEMA FOR AFRICA BR CALENDAR ───────────────────────
+-- ─── SUPABASE POSTGRESQL SCHEMA FOR ESPORTS CALENDAR ─────────────────────────
 -- Run this script in your Supabase SQL Editor (https://app.supabase.com -> SQL Editor)
 
 CREATE TABLE IF NOT EXISTS public.events (

@@ -5,14 +5,7 @@ const DISCORD_DEFAULT_AVATAR_URL = "https://res.cloudinary.com/id8ciytn/image/up
 const DISCORD_DEFAULT_BANNER_URL = "https://res.cloudinary.com/id8ciytn/image/upload/v1786622216/esports-calendar/discord/banner-v2.jpg";
 
 function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) {
-    const vercelUrl = process.env.VERCEL_URL.startsWith("http")
-      ? process.env.VERCEL_URL
-      : `https://${process.env.VERCEL_URL}`;
-    return vercelUrl.replace(/\/$/, "");
-  }
-  return "https://esportscalendar.org";
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://esportscalendar.org").replace(/\/$/, "");
 }
 
 function getBannerUrl(): string {
