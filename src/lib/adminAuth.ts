@@ -9,13 +9,14 @@ export interface AdminAuthorization {
 }
 
 export async function authorizeAdminRequest(request: NextRequest): Promise<AdminAuthorization> {
+  void request;
   if (process.env.NODE_ENV !== "production") {
     return { userId: "dev-admin-user", authorized: true };
   }
 
   try {
-    const { getAuth, clerkClient } = await import("@clerk/nextjs/server");
-    const { userId } = getAuth(request);
+    const { auth, clerkClient } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
     if (!userId) return { userId: null, authorized: false };
 
     const client = await clerkClient();

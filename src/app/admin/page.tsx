@@ -385,7 +385,7 @@ function AdminDashboard() {
         </div>}
 
         {/* Tabs for Published vs Pending Booked Events */}
-        <div className="flex items-center gap-2 mb-6 border-b border-[#27272a] pb-2">
+        <div className="admin-section-tabs flex items-center gap-2 mb-6 border-b border-[#27272a] pb-2">
           <button
             onClick={() => setActiveTab("published")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
