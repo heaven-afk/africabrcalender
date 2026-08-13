@@ -31,6 +31,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ value, onCha
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const selected = items.find((item) => item.value === value);
   const filtered = useMemo(() => items.filter((item) => `${item.label} ${item.description || ""}`.toLowerCase().includes(query.trim().toLowerCase())), [items, query]);
 
@@ -41,13 +42,17 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ value, onCha
     return () => { document.removeEventListener("mousedown", closeOutside); document.removeEventListener("keydown", closeEscape); };
   }, []);
 
+  useEffect(() => {
+    if (open && window.matchMedia("(hover: hover) and (pointer: fine)").matches) searchRef.current?.focus();
+  }, [open]);
+
   return <div className={`smart-select smart-select--${align}`} ref={rootRef}>
     <button type="button" className="smart-select__trigger" onClick={() => setOpen((current) => !current)} aria-haspopup="listbox" aria-expanded={open}>
       {selected ? <><ItemMark item={selected} /><span><strong>{selected.label}</strong>{selected.description && <small>{selected.description}</small>}</span></> : <><span className="smart-select__logo"><Gamepad2 /></span><span><strong>{placeholder}</strong></span></>}
       <ChevronDown />
     </button>
     {open && <div className="smart-select__popover">
-      <label className="smart-select__search"><Search /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><X /></button>}</label>
+      <label className="smart-select__search"><Search /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><X /></button>}</label>
       <div className="smart-select__list" role="listbox">{filtered.length ? filtered.map((item) => <button type="button" key={item.value} role="option" aria-selected={item.value === value} className={item.value === value ? "is-selected" : ""} onClick={() => { onChange(item.value); setOpen(false); setQuery(""); }}><ItemMark item={item} /><span><strong>{item.label}</strong>{item.description && <small>{item.description}</small>}</span>{item.value === value && <Check />}</button>) : <p>{emptyLabel}</p>}</div>
     </div>}
   </div>;

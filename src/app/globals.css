@@ -530,9 +530,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .cal-event-mark .cal-event-fallback { display: none; }
 .cal-event-mark--ranking { --category: #f4c95d; }.cal-event-mark--tournament { --category: #4F7CFF; }.cal-event-mark--scrim { --category: #56e39f; }.cal-event-mark--award { --category: #ff9f43; }.cal-event-mark--podcast { --category: #ff6c83; }
 .cal-overflow { position: absolute; right: 4px; bottom: 4px; color: var(--muted); font-size: .48rem; font-weight: 700; }
-.cal-event-stack:has(.cal-event-count) { gap:0; padding-right:22px; }
-.cal-event-stack:has(.cal-event-count) .cal-event-mark + .cal-event-mark { margin-left:-7px; }
-.cal-event-stack:has(.cal-event-count) .cal-event-mark { border-color:#3a423b; box-shadow:0 2px 8px rgba(0,0,0,.46); }
+.cal-event-stack.is-multiple { gap:0; }
+.cal-event-stack.is-multiple:has(.cal-event-count) { padding-right:22px; }
+.cal-event-stack.is-multiple .cal-event-mark + .cal-event-mark { margin-left:-7px; }
+.cal-event-stack.is-multiple .cal-event-mark { border-color:#3a423b; box-shadow:0 2px 8px rgba(0,0,0,.46); }
 .cal-event-count { position:absolute; right:4px; bottom:4px; min-width:19px; height:19px; padding:0 5px; display:grid; place-items:center; color:#fff; border:1px solid rgba(255,255,255,.18); border-radius:999px; background:#252b27; box-shadow:0 2px 7px rgba(0,0,0,.3); font-size:.48rem; font-weight:800; }
 .cat-dot-ranking, .cat-dot-tournament, .cat-dot-scrim, .cat-dot-award, .cat-dot-podcast { width: 7px; height: 7px; border-radius: 50%; box-shadow: none !important; }
 .cat-dot-ranking { background: #f4c95d; }.cat-dot-tournament { background: #4F7CFF; }.cat-dot-scrim { background: #56e39f; }.cat-dot-award { background: #ff9f43; }.cat-dot-podcast { background: #ff6c83; }
@@ -817,8 +818,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .cal-event-mark svg { width: 11px; height: 11px; margin: auto; }
   .cal-event-stack { display: flex; gap: 3px; }
   .cal-overflow { position: static; margin-left: 1px; font-size: .42rem; }
-  .cal-event-stack:has(.cal-event-count) { padding-right:18px; }
-  .cal-event-stack:has(.cal-event-count) .cal-event-mark + .cal-event-mark { margin-left:-8px; }
+  .cal-event-stack.is-multiple:has(.cal-event-count) { padding-right:18px; }
+  .cal-event-stack.is-multiple .cal-event-mark + .cal-event-mark { margin-left:-8px; }
   .cal-event-count { right:3px; bottom:3px; min-width:17px; height:17px; padding:0 4px; font-size:.42rem; }
   .calendar-hover-card { display: none; }
   .view-heading { margin-bottom: .65rem; align-items: flex-end; }
@@ -860,6 +861,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .booking-form__body { padding: .75rem .7rem 1rem; }
   .booking-section { padding: .85rem; border-radius: 14px; }.booking-section > header { margin-bottom: .85rem; }
   .booking-fields { grid-template-columns: 1fr; gap: .72rem; }.booking-field--wide { grid-column: auto; }
+  .smart-select__popover { position: fixed; z-index: 120; left: 10px !important; right: 10px !important; top: auto; bottom: max(10px,env(safe-area-inset-bottom)); width: auto !important; min-width: 0; max-height: min(72dvh,560px); display: flex; flex-direction: column; border-radius: 20px; transform-origin: bottom; }
+  .smart-select__search { min-height: 56px; flex: 0 0 56px; padding-inline: .9rem; }
+  .smart-select__list { min-height: 0; max-height: none; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; }
+  .smart-select__list > button { min-height: 58px; }
   .booking-field input, .booking-field select, .booking-stream input, .logo-field__control > input { height: 48px; font-size: .78rem; }
   .booking-stream { grid-template-columns: 92px minmax(0,1fr) 34px; }.booking-stream > button { height: 48px; }
   .booking-footer { min-height: 72px; padding: .7rem .75rem max(.7rem,env(safe-area-inset-bottom)); }.booking-footer > p { display: none; }.booking-footer > div { width: 100%; }.booking-footer button { min-height: 46px; flex: 1; }.booking-footer button[type="submit"] { flex: 1.5; }

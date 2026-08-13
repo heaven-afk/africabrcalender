@@ -148,7 +148,7 @@ const MonthBlock = React.memo(function MonthBlock({
             >
               {inMonth && <span className="cal-day-num">{number}</span>}
               {hasEvents && (
-                <span className="cal-event-stack">
+                <span className={`cal-event-stack ${dayEvents.length > 1 ? "is-multiple" : ""}`}>
                   {dayEvents.slice(0, 3).map((event: CalendarEvent) => <EventMark key={event.id} event={event} date={date} now={now} />)}
                   {dayEvents.length > 3 && <span className="cal-event-count" aria-hidden="true">+{dayEvents.length - 3}</span>}
                 </span>
