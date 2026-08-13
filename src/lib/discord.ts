@@ -31,9 +31,9 @@ function getAvatarUrl(): string {
 }
 
 /**
- * Builds a Discord Components V2 Container payload for an event notification
+ * Builds a clean Discord Webhook payload with a card embed & Action Row link button
  */
-function buildComponentsV2Payload(
+function buildWebhookPayload(
   titlePrefix: "New Event" | "Event Updated",
   event: CalendarEvent
 ) {
@@ -42,45 +42,27 @@ function buildComponentsV2Payload(
   const dateRange = `${event.startDate} to ${event.endDate}`;
   const directUrl = `${getSiteUrl()}/?event=${encodeURIComponent(event.id)}`;
 
-  const textContent = `**${titlePrefix}: ${event.name}**\n${orgName} • ${categoryUpper}\n${dateRange}`;
-
   return {
     username: "Africa BR Calendar",
     avatar_url: getAvatarUrl(),
-    flags: 32768, // IS_COMPONENTS_V2
+    embeds: [
+      {
+        title: `${titlePrefix}: ${event.name}`,
+        description: `**${orgName}** • **${categoryUpper}**\n📅 ${dateRange}`,
+        image: {
+          url: getBannerUrl(),
+        },
+      },
+    ],
     components: [
       {
-        type: 17, // Container
+        type: 1, // Action Row
         components: [
           {
-            type: 12, // Media Gallery
-            items: [
-              {
-                media: {
-                  url: getBannerUrl(),
-                },
-              },
-            ],
-          },
-          {
-            type: 14, // Separator
-            divider: true,
-            spacing: 1,
-          },
-          {
-            type: 10, // Text Display
-            content: textContent,
-          },
-          {
-            type: 1, // Action Row
-            components: [
-              {
-                type: 2, // Button
-                style: 5, // Link Button
-                label: "View Event",
-                url: directUrl,
-              },
-            ],
+            type: 2, // Button
+            style: 5, // Link Button
+            label: "View Event",
+            url: directUrl,
           },
         ],
       },
@@ -89,7 +71,7 @@ function buildComponentsV2Payload(
 }
 
 /**
- * Send Discord Webhook notification using Components V2 Container format for a newly created event
+ * Send Discord Webhook notification for a newly created event
  */
 export async function sendDiscordCreateNotification(event: CalendarEvent): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -98,7 +80,7 @@ export async function sendDiscordCreateNotification(event: CalendarEvent): Promi
     return;
   }
 
-  const payload = buildComponentsV2Payload("New Event", event);
+  const payload = buildWebhookPayload("New Event", event);
 
   try {
     const res = await fetch(webhookUrl, {
@@ -113,14 +95,14 @@ export async function sendDiscordCreateNotification(event: CalendarEvent): Promi
       return;
     }
 
-    console.log(`[Discord Webhook] Components V2 create notice sent for: ${event.name}`);
+    console.log(`[Discord Webhook] Create notice sent for: ${event.name}`);
   } catch (error) {
     console.error("[Discord Webhook] Failed to post webhook:", error);
   }
 }
 
 /**
- * Send Discord Webhook notification using Components V2 Container format when an event is edited
+ * Send Discord Webhook notification when an event is edited
  */
 export async function sendDiscordEditNotification(
   _oldEvent: CalendarEvent,
@@ -132,7 +114,7 @@ export async function sendDiscordEditNotification(
     return;
   }
 
-  const payload = buildComponentsV2Payload("Event Updated", newEvent);
+  const payload = buildWebhookPayload("Event Updated", newEvent);
 
   try {
     const res = await fetch(webhookUrl, {
@@ -147,7 +129,7 @@ export async function sendDiscordEditNotification(
       return;
     }
 
-    console.log(`[Discord Webhook] Components V2 edit notice sent for: ${newEvent.name}`);
+    console.log(`[Discord Webhook] Edit notice sent for: ${newEvent.name}`);
   } catch (error) {
     console.error("[Discord Webhook] Failed to post edit webhook:", error);
   }
