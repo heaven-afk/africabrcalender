@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const title = "Esports Calendar — Your esports calendar";
 const description = "Discover and track esports tournaments, rankings, scrims, awards and broadcasts in one schedule.";
@@ -59,7 +60,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body>{children}</body>
+      <body><AnalyticsTracker />{children}</body>
     </html>
   );
 }

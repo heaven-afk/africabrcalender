@@ -13,6 +13,7 @@ import { SearchableSelect } from "./SearchableSelect";
 import { GAME_OPTIONS, REGION_OPTIONS, STREAM_OPTIONS, TIMEZONE_OPTIONS } from "@/lib/eventCatalog";
 import { TimePicker } from "./TimePicker";
 import { EventCategorySelect } from "./EventCategorySelect";
+import { trackAnalyticsEvent } from "@/lib/analytics-client";
 
 interface BookEventModalProps {
   open: boolean;
@@ -80,6 +81,7 @@ export const BookEventModal: React.FC<BookEventModalProps> = ({ open, onClose, o
       });
       const json = await response.json();
       if (!response.ok || !json.success) throw new Error(json.error || "Event submission failed");
+      trackAnalyticsEvent("public_submission", { category, game: game || null, region: region || null });
       setSuccessMsg(json.message || "Your event was submitted and is ready for review.");
       onSuccess?.();
       window.setTimeout(() => { setSuccessMsg(null); onClose(); }, 2500);

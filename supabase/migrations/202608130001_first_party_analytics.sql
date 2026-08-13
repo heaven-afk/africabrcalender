@@ -1,60 +1,4 @@
--- ─── SUPABASE POSTGRESQL SCHEMA FOR AFRICA BR CALENDAR ───────────────────────
--- Run this script in your Supabase SQL Editor (https://app.supabase.com -> SQL Editor)
-
-CREATE TABLE IF NOT EXISTS public.events (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  game TEXT,
-  stage TEXT,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
-  org_name TEXT NOT NULL,
-  org_logo_url TEXT,
-  region TEXT,
-  stream_links JSONB DEFAULT '[]'::jsonb,
-  location JSONB DEFAULT '{}'::jsonb,
-  recurrence JSONB,
-  status TEXT DEFAULT 'approved',
-  submitter_email TEXT,
-  submitted_at TEXT,
-  created_by TEXT,
-  updated_at TEXT,
-  updated_by TEXT
-);
-
--- Enable Row Level Security (RLS)
-ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
-
--- Allow public read access to approved events
-CREATE POLICY "Allow public read access to approved events"
-ON public.events
-FOR SELECT
-USING (status IS NULL OR status = 'approved' OR status = 'pending');
-
--- Allow service role & anon to insert/update events
-CREATE POLICY "Allow public insert for bookings"
-ON public.events
-FOR INSERT
-WITH CHECK (true);
-
-CREATE POLICY "Allow update for all events"
-ON public.events
-FOR UPDATE
-USING (true);
-
-CREATE POLICY "Allow delete for all events"
-ON public.events
-FOR DELETE
-USING (true);
-
--- Indexes for fast date range filtering
-CREATE INDEX IF NOT EXISTS idx_events_start_date ON public.events(start_date);
-CREATE INDEX IF NOT EXISTS idx_events_end_date ON public.events(end_date);
-CREATE INDEX IF NOT EXISTS idx_events_status ON public.events(status);
-CREATE INDEX IF NOT EXISTS idx_events_category ON public.events(category);
-
--- Anonymous first-party analytics. Keep this block aligned with supabase/migrations/202608130001_first_party_analytics.sql.
+-- Anonymous, first-party site analytics. Raw IP addresses are intentionally not stored.
 CREATE TABLE IF NOT EXISTS public.analytics_sessions (
   session_id TEXT PRIMARY KEY,
   visitor_id TEXT NOT NULL,
@@ -101,7 +45,13 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_path ON public.analytics_events(
 
 ALTER TABLE public.analytics_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+
+-- There are deliberately no anon/authenticated policies. Collection and reports go through server-only routes.
 REVOKE ALL ON TABLE public.analytics_sessions FROM anon, authenticated;
 REVOKE ALL ON TABLE public.analytics_events FROM anon, authenticated;
 GRANT ALL ON TABLE public.analytics_sessions TO service_role;
 GRANT ALL ON TABLE public.analytics_events TO service_role;
+
+COMMENT ON TABLE public.analytics_sessions IS 'Anonymous first-party web analytics sessions; contains no raw IP addresses.';
+COMMENT ON TABLE public.analytics_events IS 'Anonymous first-party page views and product interactions.';
+

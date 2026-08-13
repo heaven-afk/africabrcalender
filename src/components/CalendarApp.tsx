@@ -21,6 +21,7 @@ import { CalendarEvent, EventCategory } from "@/types/event";
 import { Loader2, MapPinned, CalendarRange, Orbit, CircleAlert, RefreshCw } from "lucide-react";
 import { addMonths } from "date-fns";
 import { getEventTimingStatus } from "@/lib/eventTiming";
+import { trackAnalyticsEvent } from "@/lib/analytics-client";
 
 interface CalendarAppProps {
   initialEvents: CalendarEvent[];
@@ -62,9 +63,10 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   }, []);
 
   const selectEvent = useCallback((event: CalendarEvent, occurrenceDate: string | null = null) => {
+    trackAnalyticsEvent("event_view", { eventId: event.id, eventName: event.name, category: event.category, game: event.game || null, view: viewMode });
     setSelectedEvent(event);
     setSelectedOccurrenceDate(occurrenceDate);
-  }, []);
+  }, [viewMode]);
 
   const closeEvent = useCallback(() => {
     setSelectedEvent(null);
@@ -112,6 +114,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
     if (!Number.isNaN(openingDate.getTime())) setCurrentDate(openingDate);
 
     setWalkthroughOpen(false);
+    trackAnalyticsEvent("event_view", { eventId: linkedEvent.id, eventName: linkedEvent.name, category: linkedEvent.category, game: linkedEvent.game || null, view: "deep_link" });
     setSelectedEvent(linkedEvent);
     setSelectedOccurrenceDate(occurrenceDate);
     deepLinkHandledRef.current = true;
@@ -207,11 +210,11 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
         onToday={handleToday}
         onScrollToMonth={handleScrollToMonth}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={(mode) => { trackAnalyticsEvent("view_change", { view: mode }); setViewMode(mode); }}
         onCommandPalette={() => setCmdOpen(true)}
-        onExport={() => setExportOpen(true)}
+        onExport={() => { trackAnalyticsEvent("export_open"); setExportOpen(true); }}
         onWalkthrough={() => setWalkthroughOpen(true)}
-        onBookEvent={() => setBookEventOpen(true)}
+        onBookEvent={() => { trackAnalyticsEvent("submission_open"); setBookEventOpen(true); }}
       />
 
       <main className="flex-1 max-w-[1480px] w-full mx-auto px-3 sm:px-6 lg:px-8 pb-10 pt-5 sm:pt-8">

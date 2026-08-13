@@ -153,6 +153,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
                   <React.Fragment key={provider}>
                     <button
                       onClick={() => handleProviderClick(provider)}
+                      data-analytics-event="calendar_provider_selected"
+                      data-analytics-label={provider}
                       type="button"
                       aria-expanded={selectedProvider === provider}
                       className={`calendar-provider calendar-provider--${provider}${selectedProvider === provider ? " is-selected" : ""}`}
@@ -174,6 +176,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
                               href={providerLinks[provider]}
                               target={provider === "apple" ? undefined : "_blank"}
                               rel="noopener noreferrer"
+                              data-analytics-event="calendar_subscription_open"
+                              data-analytics-label={provider}
                               className={provider === "google" ? "calendar-provider-setup__google-link" : undefined}
                             >
                               {providerInstructions[provider].action}<ExternalLink />
@@ -189,7 +193,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ open, onClose, events,
                 );
               })}
             </div>
-            <button type="button" onClick={handleDownload} className="calendar-download-fallback">
+            <button type="button" onClick={handleDownload} data-analytics-event="calendar_download" data-analytics-label={scope} className="calendar-download-fallback">
               <span><Download /></span><div><strong>{providerMeta.download.name}</strong><small>{providerMeta.download.description} — it will not update automatically.</small></div><Download />
             </button>
           </section>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Show, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
-  Plus, Edit2, Trash2, Calendar, ArrowLeft, Images, Eye,
+  Plus, Edit2, Trash2, Calendar, ArrowLeft, Images, Eye, BarChart3,
   Loader2, CheckCircle2, AlertCircle, X, Clock, Repeat2, ShieldAlert, Lock, LogOut, MessageSquare,
   ShieldCheck, Type, Gamepad2, Tag, Building2, CalendarDays, Clock3, MapPin, Globe2,
 } from "lucide-react";
@@ -18,6 +18,7 @@ import { TimePicker } from "@/components/TimePicker";
 import { MediaLibraryModal } from "@/components/MediaLibraryModal";
 import { EventModal } from "@/components/EventModal";
 import { EventCategorySelect } from "@/components/EventCategorySelect";
+import { AdminAnalyticsDashboard } from "@/components/AdminAnalyticsDashboard";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
@@ -114,7 +115,7 @@ function AdminContent() {
 
 /* ─── Main Admin Dashboard Component ────────────────────────────────────── */
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"published" | "pending">("published");
+  const [activeTab, setActiveTab] = useState<"published" | "pending" | "analytics">("published");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [pendingEvents, setPendingEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +366,7 @@ function AdminDashboard() {
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Title bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        {activeTab !== "analytics" && <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="font-display font-bold text-white text-2xl tracking-wide">Event Management</h1>
             <p className="text-xs text-[#52525b] mt-0.5">Manage published events &amp; review public booked event requests.</p>
@@ -381,7 +382,7 @@ function AdminDashboard() {
               New Event
             </button>
           </div>
-        </div>
+        </div>}
 
         {/* Tabs for Published vs Pending Booked Events */}
         <div className="flex items-center gap-2 mb-6 border-b border-[#27272a] pb-2">
@@ -413,10 +414,24 @@ function AdminDashboard() {
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "analytics"
+                ? "bg-[#4F7CFF]/10 text-[#4F7CFF] border border-[#4F7CFF]/40"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            Analytics
+          </button>
         </div>
 
         {/* Content */}
-        {loading ? (
+        {activeTab === "analytics" ? (
+          <AdminAnalyticsDashboard />
+        ) : loading ? (
           <div className="flex items-center justify-center p-24 gap-3">
             <Loader2 className="w-5 h-5 text-[#4F7CFF] animate-spin" />
             <span className="text-sm text-[#52525b]">Loading events…</span>
