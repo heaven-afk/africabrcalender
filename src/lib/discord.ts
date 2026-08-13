@@ -32,8 +32,7 @@ export function buildDiscordEventPayload(
 ) {
   const directUrl = `${getSiteUrl()}/?event=${encodeURIComponent(event.id)}&date=${encodeURIComponent(event.startDate)}`;
   const eventContent = [
-    `## ${titlePrefix === "New Event" ? "New event added" : "Event updated"}`,
-    `# ${cleanText(event.name)}`,
+    `## ${titlePrefix === "New Event" ? "Calendar event added" : "Calendar event updated"}`,
     event.game ? `🎮 **Game:** ${cleanText(event.game, 100)}` : null,
     event.region ? `🌍 **Region:** ${cleanText(event.region, 100)}` : null,
   ].filter(Boolean).join("\n");
