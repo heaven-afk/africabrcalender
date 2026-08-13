@@ -26,7 +26,7 @@ export function getOptimizedImageUrl(
     return url;
   }
 
-  const transformParts: string[] = ["f_auto", "q_auto"];
+  const transformParts: string[] = ["f_auto", `q_${options?.quality || "auto"}`];
 
   if (options?.width) transformParts.push(`w_${options.width}`);
   if (options?.height) transformParts.push(`h_${options.height}`);
@@ -36,4 +36,20 @@ export function getOptimizedImageUrl(
 
   // Insert transformations after '/upload/'
   return url.replace("/upload/", `/upload/${transformString}/`);
+}
+
+export function getCloudinaryPublicId(url: string | null | undefined): string | null {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) return null;
+
+  try {
+    const pathname = new URL(url).pathname;
+    const folderMarker = "/africa-calendar/";
+    const folderIndex = pathname.indexOf(folderMarker);
+    if (folderIndex === -1) return null;
+
+    const assetPath = decodeURIComponent(pathname.slice(folderIndex + 1));
+    return assetPath.replace(/\.[^/.]+$/, "");
+  } catch {
+    return null;
+  }
 }

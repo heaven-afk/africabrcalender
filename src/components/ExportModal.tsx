@@ -21,7 +21,7 @@ type ExportScope = "all" | "month";
 type CalendarProvider = "google" | "apple" | "outlook" | "download";
 type SubscriptionProvider = Exclude<CalendarProvider, "download">;
 
-const CALENDAR_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || "https://africabrcalender.vercel.app").replace(/\/$/, "");
+const CALENDAR_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || "https://esportscalendar.org").replace(/\/$/, "");
 
 const providerMeta: Record<CalendarProvider, { name: string; logo: string; description: string }> = {
   google: { name: "Google Calendar", logo: "https://cdn.simpleicons.org/googlecalendar/4285F4", description: "Subscribe with your Google account" },

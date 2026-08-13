@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Show, SignIn, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import {
-  Plus, Edit2, Trash2, Calendar, ArrowLeft,
-  Loader2, CheckCircle2, AlertCircle, X, Clock, Globe, Repeat2, ShieldAlert, Lock, LogOut, MessageSquare,
+  Plus, Edit2, Trash2, Calendar, ArrowLeft, Images, Eye,
+  Loader2, CheckCircle2, AlertCircle, X, Clock, Repeat2, ShieldAlert, Lock, LogOut, MessageSquare,
+  ShieldCheck, Type, Gamepad2, Tag, Building2, CalendarDays, Clock3, MapPin, Globe2,
 } from "lucide-react";
 import { CalendarEvent, EventCategory, StreamLink } from "@/types/event";
 import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
@@ -14,6 +15,9 @@ import { SearchableSelect } from "@/components/SearchableSelect";
 import { DatePicker } from "@/components/DatePicker";
 import { GAME_OPTIONS, REGION_OPTIONS, STREAM_OPTIONS, TIMEZONE_OPTIONS, getStreamPlatform } from "@/lib/eventCatalog";
 import { TimePicker } from "@/components/TimePicker";
+import { MediaLibraryModal } from "@/components/MediaLibraryModal";
+import { EventModal } from "@/components/EventModal";
+import { EventCategorySelect } from "@/components/EventCategorySelect";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
@@ -118,6 +122,8 @@ function AdminDashboard() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState<CalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   /* Form fields */
@@ -146,16 +152,22 @@ function AdminDashboard() {
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const [resAll, resPending] = await Promise.all([
-        fetch("/api/events", { cache: "no-store" }),
-        fetch("/api/admin/events/pending", { cache: "no-store" }),
-      ]);
+      const resAll = await fetch("/api/events", { cache: "no-store" });
       const jsonAll = await resAll.json();
-      const jsonPending = await resPending.json();
+      if (!resAll.ok || !jsonAll.success) throw new Error(jsonAll.error || "Published events could not be loaded.");
+      setEvents(jsonAll.data);
 
-      if (jsonAll.success) setEvents(jsonAll.data);
-      if (jsonPending.success) setPendingEvents(jsonPending.data);
-    } catch { /* silent */ }
+      try {
+        const resPending = await fetch("/api/admin/events/pending", { cache: "no-store" });
+        const jsonPending = await resPending.json();
+        if (resPending.ok && jsonPending.success) setPendingEvents(jsonPending.data);
+      } catch (error) {
+        console.error("Pending events could not be loaded:", error);
+      }
+    } catch (error) {
+      console.error("Admin events could not be loaded:", error);
+      setToast({ type: "error", text: "Published events could not be loaded. Please retry." });
+    }
     finally { setLoading(false); }
   };
 
@@ -358,14 +370,17 @@ function AdminDashboard() {
             <h1 className="font-display font-bold text-white text-2xl tracking-wide">Event Management</h1>
             <p className="text-xs text-[#52525b] mt-0.5">Manage published events &amp; review public booked event requests.</p>
           </div>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-black font-extrabold text-xs sm:text-sm shadow-lg hover:scale-[1.02] transition-transform self-start sm:self-auto"
-            style={{ background: "#4F7CFF" }}
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            New Event
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button type="button" onClick={() => setIsMediaLibraryOpen(true)} className="admin-media-button"><Images />Media library</button>
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg hover:scale-[1.02] transition-transform"
+              style={{ background: "#4F7CFF" }}
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              New Event
+            </button>
+          </div>
         </div>
 
         {/* Tabs for Published vs Pending Booked Events */}
@@ -449,6 +464,13 @@ function AdminDashboard() {
 
                   <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                     <button
+                      onClick={() => setViewingEvent(evt)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[.04] border border-white/10 text-zinc-300 text-xs font-bold hover:text-white hover:border-white/20 transition-all"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      View details
+                    </button>
+                    <button
                       onClick={() => handleApprove(evt.id, evt.name)}
                       disabled={actionId === evt.id}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all disabled:opacity-50"
@@ -505,6 +527,14 @@ function AdminDashboard() {
 
                 <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                   <button
+                    onClick={() => setViewingEvent(evt)}
+                    className="p-2 rounded-lg bg-[#1c1c20] border border-[#27272a] text-[#a1a1aa] hover:text-white hover:border-[#3f3f46] transition-all"
+                    title="View full details"
+                    aria-label={`View details for ${evt.name}`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                  <button
                     onClick={() => handleOpenEdit(evt)}
                     className="p-2 rounded-lg bg-[#1c1c20] border border-[#27272a] text-[#a1a1aa] hover:text-white hover:border-[#3f3f46] transition-all"
                     title="Edit event"
@@ -525,6 +555,9 @@ function AdminDashboard() {
         )}
       </main>
 
+      <MediaLibraryModal open={isMediaLibraryOpen} onClose={() => setIsMediaLibraryOpen(false)} />
+      <EventModal event={viewingEvent} now={new Date()} onClose={() => setViewingEvent(null)} />
+
       {/* Edit / Create Modal */}
       {isModalOpen && (
         <div className="drawer-backdrop admin-editor-backdrop" onClick={() => setIsModalOpen(false)}>
@@ -535,74 +568,75 @@ function AdminDashboard() {
               <button onClick={() => setIsModalOpen(false)} aria-label="Close event editor"><X /></button>
             </header>
 
-            <form onSubmit={handleSubmit} className="admin-editor-form flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className={labelCls}>Event Name *</label>
+            <form onSubmit={handleSubmit} className="booking-form admin-editor-form">
+              <div className="booking-form__body admin-editor-form__body">
+              <section className="booking-section admin-editor-section">
+                <header><span>01</span><div><h3>Event details</h3><p>What is happening and where it belongs.</p></div></header>
+              <div className="booking-fields">
+                <div className="booking-field booking-field--wide">
+                  <span><Type />Event name <b>Required</b></span>
                   <input type="text" required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Season 38" className={fieldCls} />
                 </div>
-                <div>
-                  <label className={labelCls}>Game Title</label>
+                <div className="booking-field">
+                  <span><Gamepad2 />Game</span>
                   <SearchableSelect value={formGame} onChange={setFormGame} items={GAME_OPTIONS} placeholder="Choose a game" searchPlaceholder="Search games…" />
                 </div>
-                <div>
-                  <label className={labelCls}>Category *</label>
-                  <select value={formCategory} onChange={(e) => setFormCategory(e.target.value as EventCategory)} className={fieldCls}>
-                    <option value="tournament">Tournament</option>
-                    <option value="ranking">Ranking Ladder</option>
-                    <option value="scrim">Scrim Schedule</option>
-                    <option value="award">Award Ceremony</option>
-                    <option value="podcast">Podcast / Talk Show</option>
-                  </select>
+                <div className="booking-field">
+                  <span><Tag />Category</span>
+                  <EventCategorySelect value={formCategory} onChange={setFormCategory} />
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>Description</label>
+              <div className="booking-field booking-field--wide booking-field--textarea">
+                <span><MessageSquare />Description</span>
                 <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} maxLength={2000} placeholder="What players and viewers should know about this event" className={`${fieldCls} min-h-24 resize-y`} />
               </div>
+              </section>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Organization Name *</label>
+              <section className="booking-section admin-editor-section">
+                <header><span>02</span><div><h3>Organizer &amp; schedule</h3><p>Who owns it and when it runs.</p></div></header>
+              <div className="booking-fields">
+                <div className="booking-field booking-field--wide">
+                  <span><Building2 />Organization <b>Required</b></span>
                   <input type="text" required value={formOrgName} onChange={(e) => setFormOrgName(e.target.value)} placeholder="e.g. Global Apex League" className={fieldCls} />
                 </div>
-                <LogoUploadInput
-                  label="Org Logo (Upload or URL)"
+                <div className="booking-field booking-field--wide"><LogoUploadInput
+                  label="Organization logo"
                   value={formOrgLogoUrl}
                   onChange={setFormOrgLogoUrl}
-                />
+                  adminMedia
+                /></div>
               </div>
 
-              <button type="button" onClick={()=>setFormDailyRecurring(value=>!value)} className={`w-full p-3.5 flex items-center gap-3 rounded-xl border text-left transition-colors ${formDailyRecurring ? "border-[#365cc7] bg-[#4F7CFF]/[.07]" : "border-[#292e2a] bg-[#0d100e]"}`}>
+              <button type="button" onClick={()=>setFormDailyRecurring(value=>!value)} className={`booking-recurrence booking-field--wide ${formDailyRecurring ? "is-active" : ""}`}>
                 <span className="w-9 h-9 grid place-items-center rounded-lg bg-[#171b18]"><Repeat2 className="w-4 h-4 text-[#4F7CFF]" /></span><span className="min-w-0 flex-1"><strong className="block text-sm text-white">Runs every day</strong><small className="block mt-0.5 text-xs text-zinc-500">{formDailyRecurring ? "Daily recurrence enabled — dates are not required" : "For daily scrims and repeating sessions"}</small></span><span className={`w-9 h-5 p-0.5 rounded-full transition-colors ${formDailyRecurring ? "bg-[#4F7CFF]" : "bg-[#282d29]"}`}><i className={`block w-4 h-4 rounded-full bg-white transition-transform ${formDailyRecurring ? "translate-x-4" : ""}`} /></span>
               </button>
 
-              {!formDailyRecurring&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {!formDailyRecurring&&<div>
-                  <label className={labelCls}>Start Date *</label>
+              {!formDailyRecurring&&<div className="booking-fields">
+                {!formDailyRecurring&&<div className="booking-field">
+                  <span><CalendarDays />Start date <b>Required</b></span>
                   <DatePicker value={formStartDate} onChange={setFormStartDate} />
                 </div>}
-                {!formDailyRecurring&&<div>
-                  <label className={labelCls}>End Date *</label>
+                {!formDailyRecurring&&<div className="booking-field">
+                  <span><Clock3 />End date <b>Required</b></span>
                   <DatePicker value={formEndDate} onChange={setFormEndDate} min={formStartDate} />
                 </div>}
               </div>}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Region</label>
+              <div className="booking-fields">
+                <div className="booking-field">
+                  <span><MapPin />Region</span>
                   <SearchableSelect value={formRegion} onChange={setFormRegion} items={REGION_OPTIONS} placeholder="Choose a region" searchPlaceholder="Search regions…" />
                 </div>
-                <div>
-                  <label className={labelCls}>Timezone</label>
+                <div className="booking-field">
+                  <span><Clock3 />Timezone</span>
                   <SearchableSelect value={formTimezone} onChange={setFormTimezone} items={timezoneOptions} placeholder="Choose a timezone" searchPlaceholder="Search timezones…" align="right" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className={labelCls}>Start Time</label><TimePicker value={formStartTime} onChange={setFormStartTime} placeholder="Choose start time" /></div>
-                <div><label className={labelCls}>End Time (optional)</label><TimePicker value={formEndTime} onChange={setFormEndTime} placeholder="No end time" optional align="right" /></div>
+              <div className="booking-fields">
+                <div className="booking-field"><span><Clock3 />Start time</span><TimePicker value={formStartTime} onChange={setFormStartTime} placeholder="Choose start time" /></div>
+                <div className="booking-field"><span><Clock3 />End time <small>Optional</small></span><TimePicker value={formEndTime} onChange={setFormEndTime} placeholder="No end time" optional align="right" /></div>
               </div>
 
               {formCategory === "scrim" && !formDailyRecurring && (
@@ -626,7 +660,10 @@ function AdminDashboard() {
                   </div>
                 </div>
               )}
+              </section>
 
+              <section className="booking-section admin-editor-section">
+                <header><span>03</span><div><h3>Links &amp; broadcast</h3><p>Give people somewhere useful to go.</p></div></header>
               <div className="booking-streams">
                 <div className="booking-streams__head"><span>Stream links</span><button type="button" onClick={() => setFormStreamLinks((current) => [...current, { label: "YouTube", url: "" }])}><Plus />Add stream</button></div>
                 {formStreamLinks.map((stream,index)=><div className="booking-stream" key={index}>
@@ -636,18 +673,22 @@ function AdminDashboard() {
                 </div>)}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}><MessageSquare className="inline w-3 h-3 mr-1" />Discord Invite URL</label>
+              <div className="booking-fields">
+                <div className="booking-field">
+                  <span><MessageSquare />Discord invite</span>
                   <input type="url" value={formDiscordUrl} onChange={(e) => setFormDiscordUrl(e.target.value)} placeholder="https://discord.gg/..." className={fieldCls} />
                 </div>
-                <div>
-                  <label className={labelCls}><Globe className="inline w-3 h-3 mr-1" />Website URL</label>
+                <div className="booking-field">
+                  <span><Globe2 />Event website</span>
                   <input type="url" value={formWebsiteUrl} onChange={(e) => setFormWebsiteUrl(e.target.value)} placeholder="https://..." className={fieldCls} />
                 </div>
               </div>
+              </section>
+              </div>
 
-              <div className="pt-4 border-t border-[#1a1a1e] flex items-center justify-end gap-3">
+              <footer className="booking-footer admin-editor-footer">
+                <p><ShieldCheck /> Admin changes publish immediately.</p>
+                <div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[#1c1c20] border border-[#27272a] text-[#a1a1aa] text-sm font-semibold hover:text-white transition-all">
                   Cancel
                 </button>
@@ -655,7 +696,8 @@ function AdminDashboard() {
                   {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingEvent ? "Save Changes" : "Publish Event"}
                 </button>
-              </div>
+                </div>
+              </footer>
             </form>
           </aside>
         </div>

@@ -10,6 +10,7 @@ export interface EventLocation {
   websiteUrl?: string;
   note?: string;
   timezone?: string;
+  logoPublicId?: string;
 }
 
 export interface ScrimRecurrence {

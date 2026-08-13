@@ -1,31 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readJsonStore } from "@/lib/fileStore";
 import { getSupabaseClient, isSupabaseConfigured, mapEventToRow } from "@/lib/supabase";
-import { isAuthorizedAdminEmail } from "@/lib/adminPermissions";
+import { authorizeAdminRequest } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-async function isAuthorized(req: NextRequest): Promise<boolean> {
-  try {
-    const { getAuth, clerkClient } = await import("@clerk/nextjs/server");
-    const { userId } = getAuth(req);
-    if (!userId) return false;
-    try {
-      const client = await clerkClient();
-      const user = await client.users.getUser(userId);
-      const email = user?.primaryEmailAddress?.emailAddress;
-      return isAuthorizedAdminEmail(email);
-    } catch {
-      return true;
-    }
-  } catch {
-    return true;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const authorized = await isAuthorized(request);
+    const { authorized } = await authorizeAdminRequest(request);
     if (!authorized) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
     }

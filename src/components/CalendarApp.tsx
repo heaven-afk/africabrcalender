@@ -54,6 +54,7 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [bookEventOpen, setBookEventOpen] = useState(false);
   const [dayPopover, setDayPopover] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
+  const deepLinkHandledRef = useRef(false);
 
   const closeWalkthrough = useCallback(() => {
     setWalkthroughOpen(false);
@@ -83,12 +84,38 @@ export default function CalendarApp({ initialEvents, initialLoadError = false }:
   }, []);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("event")) return;
     let hasSeenTour = false;
     try { hasSeenTour = window.localStorage.getItem("esports-calendar-tour-v1") === "seen"; } catch { /* Show the tour when storage is unavailable. */ }
     if (hasSeenTour) return;
     const timer = window.setTimeout(() => setWalkthroughOpen(true), 800);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (deepLinkHandledRef.current || allEvents.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get("event");
+    if (!eventId) {
+      deepLinkHandledRef.current = true;
+      return;
+    }
+
+    const linkedEvent = allEvents.find((event) => event.id === eventId);
+    if (!linkedEvent) return;
+
+    const requestedDate = params.get("date");
+    const occurrenceDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+      ? requestedDate
+      : linkedEvent.startDate;
+    const openingDate = new Date(`${occurrenceDate}T12:00:00`);
+    if (!Number.isNaN(openingDate.getTime())) setCurrentDate(openingDate);
+
+    setWalkthroughOpen(false);
+    setSelectedEvent(linkedEvent);
+    setSelectedOccurrenceDate(occurrenceDate);
+    deepLinkHandledRef.current = true;
+  }, [allEvents]);
 
   // ─── Fetch ALL events for grid view ──────────────────
   const fetchEvents = useCallback(async () => {

@@ -7,6 +7,8 @@ export const GAME_OPTIONS: SelectItem[] = [
   { value: "Call of Duty: Mobile", label: "Call of Duty: Mobile", description: "Mobile · FPS", logo: "https://www.citypng.com/public/uploads/preview/hd-call-of-duty-mobile-cod-game-logo-png-701751694787785ikqtuo527l.png" },
   { value: "PUBG Mobile", label: "PUBG Mobile", description: "Mobile · Battle royale", logo: favicon("pubgmobile.com") },
   { value: "Free Fire", label: "Free Fire", description: "Mobile · Battle royale", logo: "https://www.pngplay.com/wp-content/uploads/10/Garena-Free-Fire-Logo-PNG-HD-Quality.png" },
+  { value: "eFootball Mobile", label: "eFootball Mobile", description: "Mobile · Football", logo: "/efootball-mobile-logo.png" },
+  { value: "Blood Strike", label: "Blood Strike", description: "Mobile · Battle royale FPS", logo: "/blood-strike-logo.png" },
   { value: "Mobile Legends: Bang Bang", label: "Mobile Legends: Bang Bang", description: "Mobile · MOBA", logo: favicon("mobilelegends.com") },
   { value: "Honor of Kings", label: "Honor of Kings", description: "Mobile · MOBA", logo: favicon("honorofkings.com") },
   { value: "VALORANT", label: "VALORANT", description: "PC · Tactical FPS", logo: favicon("playvalorant.com") },
@@ -77,7 +79,15 @@ export function getStreamPlatform(label?: string, url?: string) {
 
 export function normalizeGame(value?: string | null) {
   if (!value) return null;
-  const aliases: Record<string, string> = { codm: "Call of Duty: Mobile", "call of duty mobile": "Call of Duty: Mobile", ff: "Free Fire" };
+  const aliases: Record<string, string> = {
+    codm: "Call of Duty: Mobile",
+    "call of duty mobile": "Call of Duty: Mobile",
+    ff: "Free Fire",
+    efootball: "eFootball Mobile",
+    "e football": "eFootball Mobile",
+    "e football mobile": "eFootball Mobile",
+    bloodstrike: "Blood Strike",
+  };
   return aliases[value.trim().toLowerCase()] || value.trim();
 }
 

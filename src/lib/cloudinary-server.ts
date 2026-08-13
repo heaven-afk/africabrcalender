@@ -1,4 +1,7 @@
-import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+import "server-only";
+
+import { v2 as cloudinary } from "cloudinary";
+import { MediaAsset } from "@/types/media";
 
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -25,14 +28,27 @@ export interface CloudinaryUploadResult {
   width?: number;
   height?: number;
   format?: string;
+  bytes?: number;
+  created_at?: string;
 }
+
+export const CLOUDINARY_MEDIA_FOLDER = "africa-calendar/logos";
+export const CLOUDINARY_MEDIA_PREFIX = "africa-calendar/";
+export const MAX_MEDIA_FILE_SIZE = 5 * 1024 * 1024;
+export const ALLOWED_MEDIA_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
 
 /**
  * Uploads a file (Base64 data string or Buffer) to Cloudinary.
  */
 export async function uploadToCloudinary(
-  file: string | Buffer,
-  options: { folder?: string; publicId?: string } = {}
+  file: Buffer,
+  options: { publicId?: string } = {}
 ): Promise<CloudinaryUploadResult> {
   if (!isCloudinaryConfigured()) {
     throw new Error(
@@ -40,31 +56,16 @@ export async function uploadToCloudinary(
     );
   }
 
-  const uploadFolder = options.folder || "africa-calendar";
-
-  if (typeof file === "string") {
-    const result: UploadApiResponse = await cloudinary.uploader.upload(file, {
-      folder: uploadFolder,
-      public_id: options.publicId,
-      resource_type: "auto",
-    });
-
-    return {
-      url: result.url,
-      secure_url: result.secure_url,
-      public_id: result.public_id,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-    };
-  }
-
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: uploadFolder,
+        folder: CLOUDINARY_MEDIA_FOLDER,
         public_id: options.publicId,
-        resource_type: "auto",
+        resource_type: "image",
+        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
       },
       (error, result) => {
         if (error || !result) {
@@ -77,12 +78,68 @@ export async function uploadToCloudinary(
           width: result.width,
           height: result.height,
           format: result.format,
+          bytes: result.bytes,
+          created_at: result.created_at,
         });
       }
     );
 
     uploadStream.end(file);
   });
+}
+
+function toMediaAsset(resource: {
+  public_id: string;
+  secure_url: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+  format?: string;
+  created_at?: string;
+}): MediaAsset {
+  return {
+    publicId: resource.public_id,
+    url: resource.secure_url,
+    width: resource.width ?? null,
+    height: resource.height ?? null,
+    bytes: resource.bytes ?? null,
+    format: resource.format ?? null,
+    createdAt: resource.created_at ?? null,
+  };
+}
+
+export async function listCloudinaryMedia(nextCursor?: string): Promise<{
+  assets: MediaAsset[];
+  nextCursor: string | null;
+}> {
+  if (!isCloudinaryConfigured()) throw new Error("Cloudinary is not configured.");
+
+  const result = await cloudinary.api.resources({
+    type: "upload",
+    resource_type: "image",
+    prefix: CLOUDINARY_MEDIA_PREFIX,
+    max_results: 50,
+    next_cursor: nextCursor,
+    direction: "desc",
+  });
+
+  return {
+    assets: (result.resources || []).map(toMediaAsset),
+    nextCursor: result.next_cursor || null,
+  };
+}
+
+export async function deleteCloudinaryMedia(publicId: string): Promise<void> {
+  if (!isCloudinaryConfigured()) throw new Error("Cloudinary is not configured.");
+  if (!publicId.startsWith(CLOUDINARY_MEDIA_PREFIX)) throw new Error("Invalid media asset.");
+
+  const result = await cloudinary.uploader.destroy(publicId, {
+    resource_type: "image",
+    invalidate: true,
+  });
+  if (result.result !== "ok" && result.result !== "not found") {
+    throw new Error("Cloudinary could not delete this asset.");
+  }
 }
 
 export default cloudinary;

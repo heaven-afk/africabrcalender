@@ -1,5 +1,5 @@
 /**
- * Server-side email notification helper for Africa BR Calendar event bookings
+ * Server-side email notification helper for Esports Calendar event bookings
  */
 
 interface SendEmailParams {
@@ -30,7 +30,7 @@ Status: ${status.toUpperCase()}
 Event Name: ${eventName}
 Content: ${
       isApproved
-        ? `Congratulations! Your event "${eventName}" has been APPROVED by the Africa BR Calendar administrators and is now live on the public calendar!`
+        ? `Congratulations! Your event "${eventName}" has been APPROVED by the Esports Calendar administrators and is now live on the public calendar!`
         : `Your event submission "${eventName}" was NOT approved.${reason ? ` Reason: ${reason}` : ""}`
     }
 =================================================================
