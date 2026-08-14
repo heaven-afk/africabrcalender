@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEvents, isKvConfigured, isSupabaseConfigured } from "@/lib/kv";
+import { getPublicEvents } from "@/lib/publicEvents";
 import { EventCategory } from "@/types/event";
 
 // Never cache this route — always read fresh data from file/KV/Supabase
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     let events = await getEvents(month);
 
     // Public feed: Only return approved events (or legacy events without status field)
-    events = events.filter((e) => !e.status || e.status === "approved");
+    events = getPublicEvents(events);
 
     // Filter by Category if provided
     if (categoryParam) {

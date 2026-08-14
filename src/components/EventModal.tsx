@@ -80,15 +80,6 @@ export const EventModal: React.FC<EventModalProps> = ({ event, occurrenceDate, n
             </section>
           )}
 
-          {(event.status || event.submitterEmail || event.submittedAt) && (
-            <section className="drawer-section">
-              <div className="drawer-section__title"><Building2 /><span>Submission details</span></div>
-              {event.status && <p>Status: <strong>{event.status.charAt(0).toUpperCase() + event.status.slice(1)}</strong></p>}
-              {event.submitterEmail && <p>Submitted by: <strong>{event.submitterEmail}</strong></p>}
-              {event.submittedAt && <p>Received: <strong>{new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.submittedAt))}</strong></p>}
-            </section>
-          )}
-
           {event.streamLinks?.length > 0 && (
             <section className="drawer-section">
               <div className="drawer-section__title"><Tv /><span>Broadcasts</span></div>

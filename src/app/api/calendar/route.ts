@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { generateICS, getMonthlyExportEvents } from "@/lib/calendarExport";
 import { getEvents } from "@/lib/kv";
+import { getPublicEvents } from "@/lib/publicEvents";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
       return new Response("A valid month in YYYY-MM format is required.", { status: 400 });
     }
 
-    let events = (await getEvents()).filter((event) => !event.status || event.status === "approved");
+    let events = getPublicEvents(await getEvents());
     if (scope === "month") events = getMonthlyExportEvents(events, month);
 
     const calendarName = scope === "month" ? `${month} Esports Calendar` : "Esports Calendar";
