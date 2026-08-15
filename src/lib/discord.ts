@@ -7,6 +7,7 @@ const DISCORD_DEFAULT_BANNER_URL = "https://res.cloudinary.com/id8ciytn/image/up
 function getSiteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || SITE_URL).replace(/\/$/, "");
 }
+
 function getAvatarUrl(): string {
   return process.env.DISCORD_AVATAR_URL || DISCORD_DEFAULT_AVATAR_URL;
 }
@@ -78,39 +79,85 @@ export function buildDiscordEventPayload(
   };
 }
 
-async function sendDiscordNotification(
+/**
+ * Retrieves all configured Discord webhook URLs.
+ * Supports comma-separated, semicolon-separated, or newline-separated URLs
+ * from DISCORD_WEBHOOK_URL and DISCORD_WEBHOOK_URLS.
+ */
+function getWebhookUrls(): string[] {
+  const envValues = [
+    process.env.DISCORD_WEBHOOK_URL,
+    process.env.DISCORD_WEBHOOK_URLS,
+  ].filter(Boolean) as string[];
+
+  if (envValues.length === 0) return [];
+
+  const rawUrls = envValues
+    .flatMap((val) => val.split(/[,;\n\r]+/))
+    .map((url) => url.trim())
+    .filter((url) => url.startsWith("http://") || url.startsWith("https://"));
+
+  return Array.from(new Set(rawUrls));
+}
+
+/**
+ * Broadcasts a webhook payload to all configured Discord webhook URLs concurrently.
+ */
+async function broadcastDiscordPayload(
   titlePrefix: "New Event" | "Event Updated",
   event: CalendarEvent,
 ): Promise<void> {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-  if (!webhookUrl) {
-    console.log("[Discord Webhook] DISCORD_WEBHOOK_URL not configured. Skipping webhook.");
+  const urls = getWebhookUrls();
+  if (urls.length === 0) {
+    console.log("[Discord Webhook] No DISCORD_WEBHOOK_URL configured. Skipping webhook.");
     return;
   }
 
-  try {
-    const response = await fetch(getComponentsWebhookUrl(webhookUrl), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildDiscordEventPayload(titlePrefix, event)),
-    });
-    if (!response.ok) {
-      console.error(`[Discord Webhook] Error ${response.status}: ${await response.text()}`);
-      return;
+  const payload = buildDiscordEventPayload(titlePrefix, event);
+
+  const results = await Promise.allSettled(
+    urls.map(async (url) => {
+      const targetUrl = getComponentsWebhookUrl(url);
+      const urlSnippet = url.length > 40 ? `${url.substring(0, 35)}...` : url;
+      const res = await fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Status ${res.status} (${urlSnippet}): ${errorText}`);
+      }
+      return urlSnippet;
+    })
+  );
+
+  let successCount = 0;
+  results.forEach((result, idx) => {
+    if (result.status === "fulfilled") {
+      successCount++;
+    } else {
+      console.error(`[Discord Webhook] Failed sending ${titlePrefix} notice to webhook #${idx + 1}:`, result.reason);
     }
-    console.log(`[Discord Webhook] ${titlePrefix.toLowerCase()} notice sent for: ${event.name}`);
-  } catch (error) {
-    console.error("[Discord Webhook] Failed to post webhook:", error);
-  }
+  });
+
+  console.log(`[Discord Webhook] ${titlePrefix} notice sent for "${event.name}" to ${successCount}/${urls.length} webhook(s).`);
 }
 
+/**
+ * Send Discord Webhook notification for a newly created event
+ */
 export async function sendDiscordCreateNotification(event: CalendarEvent): Promise<void> {
-  return sendDiscordNotification("New Event", event);
+  return broadcastDiscordPayload("New Event", event);
 }
 
+/**
+ * Send Discord Webhook notification when an event is edited
+ */
 export async function sendDiscordEditNotification(
   _oldEvent: CalendarEvent,
   newEvent: CalendarEvent,
 ): Promise<void> {
-  return sendDiscordNotification("Event Updated", newEvent);
+  return broadcastDiscordPayload("Event Updated", newEvent);
 }
