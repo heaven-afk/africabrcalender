@@ -19,6 +19,7 @@ import { MediaLibraryModal } from "@/components/MediaLibraryModal";
 import { EventModal } from "@/components/EventModal";
 import { EventCategorySelect } from "@/components/EventCategorySelect";
 import { AdminAnalyticsDashboard } from "@/components/AdminAnalyticsDashboard";
+import { NotificationBell } from "@/components/NotificationBell";
 
 /* ─── Header Auth Component ────────────────────────────────────────────────── */
 function ClerkHeaderAuth() {
@@ -27,6 +28,7 @@ function ClerkHeaderAuth() {
   return (
     <Show when="signed-in">
       <div className="flex items-center gap-3">
+        <NotificationBell isAdmin={true} />
         <span className="text-xs text-[#71717a] hidden sm:block">
           {user?.primaryEmailAddress?.emailAddress || user?.fullName}
         </span>

@@ -10,6 +10,7 @@ import {
   uploadToCloudinary,
 } from "@/lib/cloudinary-server";
 import { getCloudinaryPublicId } from "@/lib/cloudinary";
+import { notifyAdminsOfSubmission } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -140,6 +141,11 @@ export async function POST(request: NextRequest) {
 
     await saveEvent(newEvent);
     uploadedPublicId = null;
+
+    // Notify admins via web push that a new event needs review
+    notifyAdminsOfSubmission(newEvent).catch((err) =>
+      console.error("Admin push notification error:", err)
+    );
 
     return NextResponse.json(
       {

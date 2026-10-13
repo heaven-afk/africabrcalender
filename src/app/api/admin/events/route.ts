@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { saveEvent, deleteEvent, getEventById } from "@/lib/kv";
 import { CalendarEvent } from "@/types/event";
 import { sendDiscordCreateNotification, sendDiscordEditNotification } from "@/lib/discord";
+import { broadcastEventNotification } from "@/lib/push";
 import { authorizeAdminRequest } from "@/lib/adminAuth";
 import { getCloudinaryPublicId } from "@/lib/cloudinary";
 
@@ -36,6 +37,11 @@ export async function POST(request: NextRequest) {
     // Fire Discord notification in background
     sendDiscordCreateNotification(newEvent).catch((err) =>
       console.error("Discord create webhook error:", err)
+    );
+
+    // Fire web push notification to all matching subscribers
+    broadcastEventNotification(newEvent).catch((err) =>
+      console.error("Push broadcast error:", err)
     );
 
     return NextResponse.json({ success: true, data: newEvent }, { status: 201 });

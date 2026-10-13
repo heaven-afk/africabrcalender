@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEventById, saveEvent } from "@/lib/kv";
 import { sendBookingStatusEmail } from "@/lib/email";
 import { sendDiscordCreateNotification } from "@/lib/discord";
+import { broadcastEventNotification } from "@/lib/push";
 import { authorizeAdminRequest } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,11 @@ export async function POST(request: NextRequest) {
     // Broadcast to Discord webhook
     sendDiscordCreateNotification(event).catch((err) =>
       console.error("Discord create notification error:", err)
+    );
+
+    // Broadcast web push to all matching public subscribers
+    broadcastEventNotification(event).catch((err) =>
+      console.error("Push broadcast on approve error:", err)
     );
 
     return NextResponse.json({

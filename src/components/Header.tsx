@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Plus,
 } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 
 export type ViewMode = "grid" | "list" | "week" | "tournaments";
 
@@ -97,6 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
             {monthStepper()}
             <div className="header-tools">
               <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
+              <NotificationBell />
               <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
             </div>
             <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
@@ -115,6 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="header-mobile__bottom">
             {viewTabs()}
             <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
+            <NotificationBell />
             <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
           </div>
         </div>
