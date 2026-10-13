@@ -80,9 +80,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isAdmin = fa
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-    if (isIos && !isStandalone && !("PushManager" in window)) {
+    const isIos =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((navigator as any).standalone);
+    if (isIos && !isStandalone) {
       setIsIosSafari(true);
     }
 
@@ -246,11 +250,26 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isAdmin = fa
       <div className="notif-panel__body">
         {/* iOS Safari Prompt when not PWA */}
         {isIosSafari && state !== "subscribed" ? (
-          <div className="notif-panel__alert">
-            <Share aria-hidden="true" />
-            <div>
-              <strong>Add to Home Screen on iOS</strong>
-              <p>To receive notifications on iPhone or iPad, tap <strong>Share</strong> in Safari and select <strong>Add to Home Screen</strong>.</p>
+          <div className="notif-panel__prompt">
+            <p className="notif-panel__prompt-title">
+              Install app for notifications
+            </p>
+            <p className="notif-panel__prompt-sub">
+              Apple requires adding this app to your Home Screen before notifications can be enabled:
+            </p>
+            <div className="notif-panel__ios-steps">
+              <div className="notif-panel__ios-step">
+                <span className="notif-panel__ios-step-num">1</span>
+                <span>Tap the <strong>Share</strong> button <Share className="inline w-3.5 h-3.5 mx-1" aria-hidden="true" /> in Safari</span>
+              </div>
+              <div className="notif-panel__ios-step">
+                <span className="notif-panel__ios-step-num">2</span>
+                <span>Tap <strong>Add to Home Screen</strong></span>
+              </div>
+              <div className="notif-panel__ios-step">
+                <span className="notif-panel__ios-step-num">3</span>
+                <span>Open from Home Screen to turn on notifications</span>
+              </div>
             </div>
           </div>
         ) : state === "denied" ? (
