@@ -116,8 +116,8 @@ const structuredData = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         <AnalyticsTracker />
         <IOSInstallPrompt />
