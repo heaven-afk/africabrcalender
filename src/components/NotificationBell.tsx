@@ -112,9 +112,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isAdmin = fa
   useEffect(() => {
     if (!settingsOpen) return;
     const close = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest?.(".notif-panel") ||
+        target?.closest?.(".notif-bell") ||
+        target?.closest?.(".notif-backdrop")
+      ) {
+        return;
       }
+      setSettingsOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
@@ -368,8 +374,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ isAdmin = fa
   return (
     <div className="notif-bell" ref={panelRef}>
       <button
+        type="button"
         className={`icon-action notif-bell__trigger${state === "subscribed" ? " is-active" : ""}${state === "denied" ? " is-denied" : ""}`}
-        onClick={() => setSettingsOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSettingsOpen((v) => !v);
+        }}
         aria-label={
           state === "subscribed" ? "Notification settings" :
           state === "denied"     ? "Notifications blocked in browser settings" :
