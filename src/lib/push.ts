@@ -8,9 +8,12 @@ import { CalendarEvent } from "@/types/event";
 // ─── VAPID Configuration ─────────────────────────────────────────────────────
 
 function getVapidConfig() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const publicKey =
+    process.env.VAPID_PUBLIC_KEY ||
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+    "BEmDROyPdokhCQ_7bMM-Z8CLlefcwJwNRQmkhxQpX7OvR8KqshQ97aOnj69GQKScq58nziLj8yKzRtYRMCfxpgw";
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:admin@esportscalendar.org";
+  const subject = process.env.VAPID_SUBJECT || "mailto:ogadizion01@gmail.com";
   return { publicKey, privateKey, subject };
 }
 

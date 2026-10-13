@@ -110,14 +110,16 @@ export const Header: React.FC<HeaderProps> = ({
             {brand()}
             <div className="header-mobile__top-actions">
               {monthStepper()}
-              <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
               <button className="header-search" onClick={onCommandPalette} aria-label="Search events" data-tour="search"><Search aria-hidden="true" /></button>
             </div>
           </div>
           <div className="header-mobile__bottom">
             {viewTabs()}
-            <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
-            <NotificationBell />
+            <div className="header-tools">
+              <button className="icon-action header-utility" onClick={onExport} aria-label="Download calendar file" title="Download calendar file" data-tour="export"><Download /></button>
+              <NotificationBell />
+              <button className="icon-action header-help" onClick={onWalkthrough} aria-label="Calendar help" title="Calendar help"><CircleHelp /></button>
+            </div>
             <button className="submit-event" onClick={onBookEvent}><Plus aria-hidden="true" /><span>Add event</span></button>
           </div>
         </div>
